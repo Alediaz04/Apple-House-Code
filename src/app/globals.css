@@ -1034,3 +1034,21 @@
 
 
 
+
+  .admin-menu-btn{
+    display:none;background:none;border:none;color:var(--text);
+    padding:4px;margin-left:auto;
+  }
+
+  @media (max-width:768px){
+    .admin-menu-btn{display:block;}
+    .admin-sidebar-header{margin-bottom:0;padding-bottom:0;border-bottom:none;}
+    .admin-sidebar-nav,
+    .admin-sidebar-footer{display:none;}
+    .admin-sidebar.is-open .admin-sidebar-header{
+      margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);
+    }
+    .admin-sidebar.is-open .admin-sidebar-nav,
+    .admin-sidebar.is-open .admin-sidebar-footer{display:flex;}
+    .admin-sidebar.is-open .admin-sidebar-footer{flex-direction:column;}
+  }
