@@ -58,6 +58,10 @@ const NAV_ITEMS: NavItem[] = [
 export default function AdminSidebar() {
   const pathname = usePathname();
 
+  if (pathname === "/admin/login") {
+    return null;
+  }
+
   return (
     <aside className="admin-sidebar">
       <div className="admin-sidebar-header">

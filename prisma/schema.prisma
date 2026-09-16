@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite" // en producción: "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // Categorías fijas del catálogo (mismas que en la web pública)

@@ -430,6 +430,8 @@
   .social-row a:hover{color:var(--text);border-color:var(--text-faint);}
   .social-row svg{width:16px;height:16px;}
   .footer-note{font-size:12.5px;color:var(--text-faint);margin-top:22px;}
+  .footer-note a{color:var(--text-faint);text-decoration:none;transition:color .15s ease;}
+  .footer-note a:hover{color:var(--text-muted);}
 
   /* ---------- WhatsApp floating button ---------- */
   .wa-float{
@@ -985,5 +987,50 @@
       padding: 20px;
     }
   }
+
+  /* Login Page Container */
+  .admin-login-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 48px);
+    width: 100%;
+    padding: 24px 16px;
+  }
+
+  .admin-login-card {
+    width: 100%;
+    max-width: 440px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .admin-login-header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  .admin-login-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .admin-login-header h1 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .admin-login-header p {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
 
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { WaIcon } from "./WaIcon";
 import { waLink } from "@/lib/products";
 
@@ -28,7 +29,14 @@ export default function Footer() {
               </a>
             </div>
           </div>
-          
+
+          <div className="footer-note">
+            <span>© {new Date().getFullYear()} Apple House. Todos los derechos reservados.</span>
+            {" · "}
+            <Link href="/admin/login">
+              Soy admin
+            </Link>
+          </div>
         </div>
       </footer>
 
