@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // en producción: "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Categorías fijas del catálogo (mismas que en la web pública)
+enum Categoria {
+  IPHONE
+  MAC
+  IPAD
+  ACCESORIOS
+  OTROS
+}
+
+enum Estado {
+  NUEVO
+  USADO
+}
+
+model Producto {
+  id          String    @id @default(cuid()) // id único autogenerado
+  modelo      String                          // ej: "iPhone 13 Pro Max"
+  categoria   Categoria
+  estado      Estado
+  color       String?                         // "?" = campo opcional
+  memoria     String?
+  bateria     String?                         // solo aplica a usados
+  precioCosto Float?                          // lo que le costó a Apple House (privado, no se muestra en la web pública)
+  precioVenta Float                           // precio que ve el cliente
+  stock       Int       @default(1)           // cantidad disponible
+  visible     Boolean   @default(true)        // false = oculto de la web pública sin borrarlo
+  imagen      String?                         // ruta o URL de la foto (lo conectamos en el próximo paso)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
