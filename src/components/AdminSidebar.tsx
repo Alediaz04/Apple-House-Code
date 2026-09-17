@@ -25,6 +25,15 @@ const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    label: "Agregar equipo",
+    href: "/admin/agregar",
+    icon: (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
     label: "Ventas equipos",
     href: "/admin/ventas-equipos",
     icon: (
