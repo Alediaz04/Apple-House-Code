@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import Image from "next/image";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -41,7 +42,7 @@ export default function AdminLoginPage() {
       <div className="admin-login-card">
         <div className="admin-login-header">
           <div className="admin-login-logo">
-            <span className="admin-logo-dot" />
+            <Image src="/logo.png" alt="Apple House" width={32} height={32} style={{ borderRadius: "50%", objectFit: "cover" }} unoptimized />
             <span className="admin-logo-text">Apple House</span>
             <span className="admin-badge">Admin</span>
           </div>

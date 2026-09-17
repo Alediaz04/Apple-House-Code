@@ -40,7 +40,7 @@ export default function Header() {
       <header>
         <div className="container nav">
           <a href="#inicio" className="brand">
-            <Image className="brand-logo" src="/logo.png" alt="Apple House" width={40} height={40} />
+            <Image className="brand-logo" src="/logo.png" alt="Apple House" width={40} height={40} priority unoptimized />
             <div className="brand-name">
               Apple House <span>Mendoza</span>
             </div>

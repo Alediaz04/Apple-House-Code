@@ -5,6 +5,11 @@ export const metadata: Metadata = {
   title: "Apple House — Ciudad, Mendoza",
   description:
     "Venta de iPhone, Mac, iPad y accesorios nuevos y usados en Mendoza. Service técnico propio, garantía de 30 días en equipos usados.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: "Apple House — Ciudad, Mendoza",
     description:

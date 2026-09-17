@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
@@ -86,7 +87,7 @@ export default function AdminSidebar() {
     <aside className={`admin-sidebar${open ? " is-open" : ""}`}>
       <div className="admin-sidebar-header">
         <div className="admin-logo">
-          <span className="admin-logo-dot" />
+          <Image src="/logo.png" alt="Apple House" width={28} height={28} style={{ borderRadius: "50%", objectFit: "cover" }} unoptimized />
           <span className="admin-logo-text">Apple House</span>
           <span className="admin-badge">Admin</span>
           <button
