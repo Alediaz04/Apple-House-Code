@@ -1,47 +1,19 @@
 "use client";
 
-import { useState, FormEvent } from "react";
+import { useActionState } from "react";
+import Image from "next/image";
+import { iniciarSesion } from "./actions";
 
 export default function AdminLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    try {
-      // TODO: Conectar con Supabase Auth signInWithPassword({ email, password })
-      // Demo validation placeholder for UI test
-      if (!email || !password) {
-        setError("Por favor, completa todos los campos.");
-        setLoading(false);
-        return;
-      }
-
-      // Por ahora demostramos el espacio de error/procesamiento
-      // Al presionar ingresar sin Supabase configurado aún
-      setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        // Descomentar cuando Supabase Auth esté vinculado
-        // setError("Email o contraseña incorrectos");
-      }, 800);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Ocurrió un error inesperado");
-      setLoading(false);
-    }
-  };
+  // Conectamos el formulario con la Server Action y obtenemos su estado.
+  const [state, formAction, pending] = useActionState(iniciarSesion, null);
 
   return (
     <div className="admin-login-wrapper">
       <div className="admin-login-card">
         <div className="admin-login-header">
           <div className="admin-login-logo">
-            <span className="admin-logo-dot" />
+            <Image src="/logo.png" alt="Apple House" width={32} height={32} style={{ borderRadius: "50%", objectFit: "cover" }} unoptimized />
             <span className="admin-logo-text">Apple House</span>
             <span className="admin-badge">Admin</span>
           </div>
@@ -49,8 +21,8 @@ export default function AdminLoginPage() {
           <p>Ingresá con tus credenciales de administrador</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="admin-form">
-          {error && (
+        <form action={formAction} className="admin-form">
+          {state?.error && (
             <div className="form-alert error">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="12" cy="12" r="10" />
@@ -58,7 +30,7 @@ export default function AdminLoginPage() {
               </svg>
               <div>
                 <strong>Error al ingresar:</strong>
-                <p>{error}</p>
+                <p>{state.error}</p>
               </div>
             </div>
           )}
@@ -76,8 +48,6 @@ export default function AdminLoginPage() {
                 autoComplete="email"
                 placeholder="admin@applehouse.com"
                 className="form-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
           </div>
@@ -95,15 +65,13 @@ export default function AdminLoginPage() {
                 autoComplete="current-password"
                 placeholder="••••••••"
                 className="form-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>
 
           <div className="form-actions" style={{ marginTop: "12px" }}>
-            <button type="submit" className="admin-submit-btn" disabled={loading}>
-              {loading ? (
+            <button type="submit" className="admin-submit-btn" disabled={pending}>
+              {pending ? (
                 <>
                   <span className="spinner" />
                   Ingresando…

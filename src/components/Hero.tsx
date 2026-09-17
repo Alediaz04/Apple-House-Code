@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { WaIcon } from "./WaIcon";
 import { waLink } from "@/lib/products";
 
@@ -36,25 +35,60 @@ export default function Hero() {
           <div className="hero-stats">
             <div className="stat"><b>+4.000</b><span>seguidores en Instagram</span></div>
             <div className="stat"><b>30 días</b><span>de garantía en usados</span></div>
-            <div className="stat"><b>propio</b><span>service técnico en el local</span></div>
+            <div className="stat"><b>PROPIO</b><span>service técnico en el local</span></div>
           </div>
         </div>
         <div className="hero-visual">
-          <Image className="hero-logo-bg" src="/logo.png" alt="" width={560} height={560} />
-          <svg className="device" viewBox="0 0 220 440" fill="none">
-            <rect x="6" y="6" width="208" height="428" rx="46" fill="#131519" stroke="#2A2D35" strokeWidth="2" />
-            <rect x="20" y="24" width="180" height="392" rx="30" fill="#0B0C0E" stroke="#20232B" />
-            <rect x="78" y="34" width="64" height="18" rx="9" fill="#1C1F25" />
-            <circle cx="110" cy="380" r="3" fill="#2A2D35" />
-            <rect x="34" y="70" width="152" height="86" rx="14" fill="#16181D" stroke="#242732" />
-            <rect x="34" y="166" width="72" height="72" rx="14" fill="#16181D" stroke="#242732" />
-            <rect x="114" y="166" width="72" height="72" rx="14" fill="#1C1F25" stroke="#242732" />
-            <rect x="34" y="248" width="152" height="46" rx="12" fill="#16181D" stroke="#242732" />
-            <text x="110" y="112" textAnchor="middle" fontFamily="Space Grotesk" fontSize="15" fill="#FCAF45">Apple House</text>
-            <text x="110" y="135" textAnchor="middle" fontFamily="Inter" fontSize="10" fill="#5E6169">Ciudad, Mendoza</text>
-            <text x="70" y="206" textAnchor="middle" fontFamily="Space Grotesk" fontSize="12" fill="#9A9CA3">Stock</text>
-            <text x="150" y="206" textAnchor="middle" fontFamily="Space Grotesk" fontSize="12" fill="#9A9CA3">Service</text>
-            <text x="110" y="276" textAnchor="middle" fontFamily="Inter" fontSize="10" fill="#5E6169">garantía · 30 días</text>
+          <svg className="device" viewBox="0 0 240 480" fill="none">
+            <defs>
+              <clipPath id="phoneLogoClip">
+                <circle cx="120" cy="112" r="32" />
+              </clipPath>
+              <linearGradient id="phoneGlow" x1="0" y1="0" x2="240" y2="480" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#2F6FED" stopOpacity="0.12" />
+                <stop offset="1" stopColor="#FCAF45" stopOpacity="0.06" />
+              </linearGradient>
+            </defs>
+
+            {/* Phone chassis */}
+            <rect x="4" y="4" width="232" height="472" rx="48" fill="#131519" stroke="#2C303B" strokeWidth="2.5" />
+            
+            {/* Screen */}
+            <rect x="14" y="14" width="212" height="452" rx="38" fill="#0B0C0E" stroke="#1A1C22" strokeWidth="1.5" />
+            <rect x="14" y="14" width="212" height="452" rx="38" fill="url(#phoneGlow)" />
+
+            {/* Dynamic Island */}
+            <rect x="86" y="24" width="68" height="20" rx="10" fill="#14161C" stroke="#22252E" strokeWidth="0.8" />
+            <circle cx="140" cy="34" r="3.5" fill="#0B0C0E" />
+
+            {/* Status bar */}
+            <text x="36" y="38" fontFamily="Inter, sans-serif" fontSize="10" fontWeight="600" fill="#9A9CA3">9:41</text>
+            <circle cx="198" cy="34" r="2.5" fill="#9A9CA3" />
+            <circle cx="204" cy="34" r="2.5" fill="#9A9CA3" />
+
+            {/* Top Brand Card with Circular Logo */}
+            <rect x="26" y="60" width="188" height="138" rx="20" fill="#14161D" stroke="#262934" strokeWidth="1" />
+            <circle cx="120" cy="112" r="34" fill="#1C1F28" stroke="rgba(255,255,255,0.08)" />
+            <image href="/logo.png" x="88" y="80" width="64" height="64" clipPath="url(#phoneLogoClip)" preserveAspectRatio="xMidYMid slice" />
+            <text x="120" y="162" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontWeight="700" fontSize="15" fill="#F3F3F1">Apple House</text>
+            <text x="120" y="180" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11" fill="#9A9CA3">Ciudad, Mendoza</text>
+
+            {/* Feature Widgets */}
+            <rect x="26" y="210" width="90" height="86" rx="18" fill="#14161D" stroke="#262934" strokeWidth="1" />
+            <text x="71" y="248" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontWeight="600" fontSize="14" fill="#6AA6FF">Stock</text>
+            <text x="71" y="268" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="10.5" fill="#9A9CA3">Equipos</text>
+
+            <rect x="124" y="210" width="90" height="86" rx="18" fill="#14161D" stroke="#262934" strokeWidth="1" />
+            <text x="169" y="248" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontWeight="600" fontSize="14" fill="#FCAF45">Service</text>
+            <text x="169" y="268" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="10.5" fill="#9A9CA3">Técnico</text>
+
+            {/* Warranty Badge Card */}
+            <rect x="26" y="308" width="188" height="56" rx="16" fill="#14161D" stroke="#262934" strokeWidth="1" />
+            <text x="120" y="332" textAnchor="middle" fontFamily="Space Grotesk, sans-serif" fontWeight="600" fontSize="13" fill="#FCAF45">Garantía 30 días</text>
+            <text x="120" y="349" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="10.5" fill="#9A9CA3">En todos los equipos usados</text>
+
+            {/* Home indicator bar */}
+            <rect x="85" y="444" width="70" height="4" rx="2" fill="#3D414D" />
           </svg>
         </div>
       </div>
