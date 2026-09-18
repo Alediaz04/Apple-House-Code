@@ -24,6 +24,16 @@ const CAT_ICONS: Record<Categoria, React.ReactNode> = {
       <path d="M4 20l3.5-1 10-10-2.5-2.5-10 10L4 20z" /><path d="M14 4l2.5 2.5" />
     </svg>
   ),
+  play: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="4" y="5" width="16" height="14" rx="2" /><path d="M8 12h4M10 10v4M16 11h.01M18 13h.01" />
+    </svg>
+  ),
+  fundas: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="6" y="2" width="12" height="20" rx="3" /><path d="M9 5h6" />
+    </svg>
+  ),
   otros: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" />
@@ -37,6 +47,8 @@ const CATS: { value: Categoria | "todos"; label: string }[] = [
   { value: "mac", label: "Mac" },
   { value: "ipad", label: "iPad" },
   { value: "accesorios", label: "Accesorios" },
+  { value: "play", label: "Play" },
+  { value: "fundas", label: "Fundas" },
   { value: "otros", label: "Otros" },
 ];
 
@@ -56,7 +68,8 @@ export default function Stock({ initialProductos }: { initialProductos?: Product
   const [filtroTexto, setFiltroTexto] = useState("");
   const [modalIndex, setModalIndex] = useState<number | null>(null);
 
-  const lista = initialProductos && initialProductos.length > 0 ? initialProductos : productos;
+  // Un array vacío significa que la base no tiene productos disponibles.
+  const lista = initialProductos ?? productos;
 
   const items = useMemo(() => {
     return lista.filter((p) => {

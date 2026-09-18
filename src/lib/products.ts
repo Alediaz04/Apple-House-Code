@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 
-export type Categoria = "iphone" | "mac" | "ipad" | "accesorios" | "otros";
+export type Categoria = "iphone" | "mac" | "ipad" | "accesorios" | "play" | "fundas" | "otros";
 export type Estado = "nuevo" | "usado";
 
 export interface Producto {
@@ -12,12 +12,13 @@ export interface Producto {
   color: string;
   memoria: string;
   precio: number;
+  stock?: number;
 }
 
 export async function getProductosDb(): Promise<Producto[]> {
   try {
     const dbProducts = await prisma.producto.findMany({
-      where: { visible: true },
+      where: { visible: true, stock: { gt: 0 } },
       orderBy: { createdAt: "desc" },
     });
 
@@ -31,19 +32,20 @@ export async function getProductosDb(): Promise<Producto[]> {
         color: p.color || "—",
         memoria: p.memoria || "—",
         precio: p.precioVenta,
+        stock: p.stock,
       }));
     }
   } catch (error) {
     console.error("Error cargando productos de la base de datos:", error);
   }
 
-  return productos;
+  return [];
 }
 
 // NOTA: en la Etapa 2 (panel admin) este array pasa a venir de la base de datos.
 export const productos: Producto[] = [
-  { modelo: "iPhone 12 mini", cat: "iphone", estado: "usado", bateria: "100%", color: "Purple", memoria: "64 GB", precio: 250 },
-  { modelo: "iPhone 13 mini", cat: "iphone", estado: "usado", bateria: "88%", color: "Blue", memoria: "128 GB", precio: 300 },
+  { modelo: "iPhone 12 mini", cat: "iphone", estado: "usado", bateria: "100%", color: "Purple", memoria: "64 GB", precio: 250, stock: 1 },
+  { modelo: "iPhone 13 mini", cat: "iphone", estado: "usado", bateria: "88%", color: "Blue", memoria: "128 GB", precio: 300, stock: 1 },
   { modelo: "iPhone 13", cat: "iphone", estado: "usado", bateria: "93%", color: "White", memoria: "128 GB", precio: 350 },
   { modelo: "iPhone 13 Pro Max", cat: "iphone", estado: "usado", bateria: "100%", color: "Gold", memoria: "128 GB", precio: 510 },
   { modelo: "iPhone 13 Pro Max", cat: "iphone", estado: "usado", bateria: "100%", color: "Green (detalle estético)", memoria: "128 GB", precio: 450 },
@@ -70,6 +72,8 @@ export const CAT_LABEL: Record<Categoria, string> = {
   mac: "Mac",
   ipad: "iPad",
   accesorios: "Accesorio",
+  play: "Play",
+  fundas: "Fundas",
   otros: "Otro",
 };
 

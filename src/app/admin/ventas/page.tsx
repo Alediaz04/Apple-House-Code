@@ -1,26 +1,33 @@
-export default function VentasPage() {
-  return (
-    <div style={{ maxWidth: 840, margin: "0 auto", padding: "32px 20px" }}>
-      <h1 style={{ marginBottom: 6 }}>Ventas</h1>
-      <p style={{ color: "var(--text-muted)", marginBottom: 32 }}>
-        Registro e historial de ventas de equipos realizados en Apple House.
-      </p>
+import { prisma } from "@/lib/prisma";
+import VentasPanel from "./VentasPanel";
 
-      <div
-        style={{
-          padding: 48,
-          background: "rgba(255, 255, 255, 0.03)",
-          borderRadius: 16,
-          border: "1px stroke rgba(255, 255, 255, 0.08)",
-          textAlign: "center",
-        }}
-      >
-        <div style={{ fontSize: "2.5rem", marginBottom: 12 }}>💰</div>
-        <h3 style={{ marginBottom: 8 }}>Módulo de Ventas</h3>
-        <p style={{ color: "var(--text-muted)", maxWidth: 460, margin: "0 auto" }}>
-          Próximamente podrás registrar ventas, registrar el cliente y descontar stock automáticamente.
+export default async function VentasPage() {
+  const [productos, ventas] = await Promise.all([
+    prisma.producto.findMany({
+      where: { visible: true, stock: { gt: 0 } },
+      orderBy: { modelo: "asc" },
+      select: { id: true, modelo: true, stock: true },
+    }),
+    prisma.venta.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        producto: {
+          select: { modelo: true, categoria: true },
+        },
+      },
+    }),
+  ]);
+
+  return (
+    <main style={{ maxWidth: 960, margin: "0 auto", padding: "48px 20px" }}>
+      <div style={{ marginBottom: 32 }}>
+        <h1 style={{ marginBottom: 6 }}>VENTAS</h1>
+        <p style={{ color: "var(--text-muted)" }}>
+          Registrá una venta para descontar stock y conservar el historial.
         </p>
       </div>
-    </div>
+
+      <VentasPanel productos={productos} ventas={ventas} />
+    </main>
   );
 }

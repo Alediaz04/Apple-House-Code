@@ -541,3 +541,97 @@ Si se cambia la configuración de Supabase:
 2. Revisar `src/lib/supabase/server.ts`.
 3. Reiniciar el servidor.
 4. Probar que la cookie se cree después de un login exitoso.
+
+## 14. Inventario, ventas y stock
+
+### Modelo de datos
+
+`Producto.stock` es la cantidad disponible. Una venta no cambia el `Estado` del
+equipo (`NUEVO` o `USADO`): crea un registro en `Venta` y descuenta la cantidad
+vendida del stock.
+
+El modelo `Venta` guarda:
+
+- `productoId`: producto vendido.
+- `cantidad`: unidades vendidas.
+- `precioUnitario`: precio vigente en el momento de la venta.
+- `total`: precio unitario multiplicado por la cantidad.
+- `createdAt`: fecha de la operación.
+
+La migración está en:
+
+```text
+prisma/migrations/20260917220000_add_sales_and_categories/migration.sql
+```
+
+Para aplicar migraciones en otro entorno:
+
+```bash
+npx prisma migrate deploy
+npx prisma generate
+```
+
+### Registrar una venta
+
+La pantalla `/admin/ventas` usa:
+
+- `src/app/admin/ventas/page.tsx`: consulta productos con stock y ventas
+  concretadas.
+- `src/app/admin/ventas/VentasPanel.tsx`: formulario y listado visual.
+- `src/app/admin/ventas/actions.ts`: `registrarVenta`.
+
+`registrarVenta` utiliza `prisma.$transaction`. Primero ejecuta un `updateMany`
+con la condición `stock >= cantidad`; si no actualiza exactamente un producto,
+la operación falla y no se crea la venta. Después crea `Venta` con el precio
+actual del producto. Así se evita vender más unidades de las disponibles incluso
+si dos solicitudes llegan al mismo tiempo.
+
+Después de una venta se ejecuta `revalidatePath` para:
+
+- Refrescar el historial de `/admin/ventas`.
+- Actualizar las tarjetas y cantidades de `/admin/stock`.
+- Ocultar el producto en la web pública cuando su stock llega a cero.
+
+### Stock del panel administrativo
+
+`src/app/admin/stock/StockList.tsx` muestra una tarjeta por categoría:
+
+- iPhone
+- Mac
+- iPad
+- Accesorios
+- Play
+- Fundas
+- Otros
+
+Cada tarjeta muestra cuántos productos tiene y el total de unidades disponibles.
+Al seleccionarla, se despliegan los productos de esa categoría y cada producto
+muestra su stock individual. La selección es solamente visual; los datos vienen
+del servidor y se vuelven a renderizar después de una Server Action.
+
+La opción antigua `Marcar como vendido` fue retirada del stock porque ponía
+`stock = 0` sin crear un registro histórico. Las ventas deben registrarse desde
+`/admin/ventas`.
+
+### Catálogo público
+
+`src/lib/products.ts` consulta únicamente:
+
+```ts
+where: { visible: true, stock: { gt: 0 } }
+```
+
+Por lo tanto, un producto con stock cero no se muestra a los clientes. Si la
+consulta falla, la función devuelve una lista vacía en vez de mostrar productos
+estáticos cuyo stock real no se conoce.
+
+### Categorías nuevas
+
+Las categorías `PLAY` y `FUNDAS` deben existir en los tres lugares:
+
+1. Enum `Categoria` de `prisma/schema.prisma`.
+2. Selectores de alta y edición de producto.
+3. Tipos y filtros del catálogo público.
+
+Si se agrega otra categoría, actualizar esos mismos puntos, crear una migración
+Prisma y regenerar el cliente.
