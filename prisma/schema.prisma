@@ -8,7 +8,24 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-// Categorías fijas del catálogo (mismas que en la web pública)
+model Producto {
+  id          String    @id @default(cuid())
+  modelo      String
+  categoria   Categoria
+  estado      Estado
+  color       String?
+  memoria     String?
+  bateria     String?
+  precioCosto Float?
+  precioVenta Float
+  stock       Int       @default(1)
+  visible     Boolean   @default(true)
+  imagen      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  moneda      String    @default("USD")
+}
+
 enum Categoria {
   IPHONE
   MAC
@@ -22,32 +39,13 @@ enum Estado {
   USADO
 }
 
+
 enum EstadoReparacion {
   PENDIENTE
   ENTREGADO
 }
-
-
-model Producto {
-  id          String    @id @default(cuid()) // id único autogenerado
-  modelo      String                          // ej: "iPhone 13 Pro Max"
-  categoria   Categoria
-  estado      Estado
-  color       String?                         // "?" = campo opcional
-  memoria     String?
-  bateria     String?                         // solo aplica a usados
-  precioCosto Float?                          // lo que le costó a Apple House (privado, no se muestra en la web pública)
-  precioVenta Float                           // precio que ve el cliente
-  stock       Int       @default(1)           // cantidad disponible
-  visible     Boolean   @default(true)        // false = oculto de la web pública sin borrarlo
-  imagen      String?                         // ruta o URL de la foto (lo conectamos en el próximo paso)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-}
-
-
 model Reparacion {
-  id             String            @id @default(cuid())
+  id             String           @id @default(cuid())
   nombreCliente  String
   telefono       String
   email          String?
@@ -56,7 +54,12 @@ model Reparacion {
   cobro          Float?
   costoRepuestos Float?
   descripcion    String?
-  estado         EstadoReparacion  @default(PENDIENTE)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  estado         EstadoReparacion @default(PENDIENTE)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 }
+
+
+
+
+
