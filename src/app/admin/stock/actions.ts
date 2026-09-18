@@ -79,3 +79,22 @@ export async function editarProducto(
     return { ok: false, error: "No se pudieron guardar los cambios del producto." };
   }
 }
+
+export async function cambiarEstadoVendido(id: string, vendido: boolean) {
+  try {
+    await prisma.producto.update({
+      where: { id },
+      data: {
+        visible: !vendido,
+        stock: vendido ? 0 : 1,
+      },
+    });
+    revalidatePath("/admin/stock");
+    revalidatePath("/");
+    return { ok: true };
+  } catch (error) {
+    console.error("Error al cambiar estado vendido:", error);
+    return { ok: false, error: "No se pudo cambiar el estado del producto." };
+  }
+}
+

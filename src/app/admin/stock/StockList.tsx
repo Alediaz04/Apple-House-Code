@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useTransition } from "react";
 import EditModal from "./EditModal";
-import { eliminarProducto } from "./actions";
+import { eliminarProducto, cambiarEstadoVendido } from "./actions";
 
 const CATEGORIAS = [
   { value: "IPHONE", label: "iPhone", icon: "📱" },
@@ -54,6 +54,14 @@ export default function StockList({ productos }: { productos: Producto[] }) {
     startTransition(async () => {
       await eliminarProducto(targetId);
       setDeletingProduct(null);
+    });
+  };
+
+  const handleToggleVendido = (p: Producto) => {
+    const vendidoActual = p.stock === 0 || !p.visible;
+    setOpenMenuId(null);
+    startTransition(async () => {
+      await cambiarEstadoVendido(p.id, !vendidoActual);
     });
   };
 
@@ -286,6 +294,38 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                         </svg>
                         Editar producto
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleVendido(p)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          width: "100%",
+                          padding: "10px 14px",
+                          border: "none",
+                          background: "transparent",
+                          borderRadius: 8,
+                          color: "var(--text)",
+                          fontSize: "0.88rem",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          textAlign: "left",
+                          whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          {esVendido ? (
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                          ) : (
+                            <path d="M9 11l3 3L22 4" />
+                          )}
+                        </svg>
+                        {esVendido ? "Marcar como disponible" : "Marcar como vendido"}
                       </button>
 
                       <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
