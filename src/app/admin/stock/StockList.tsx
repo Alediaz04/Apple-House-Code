@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition, useMemo } from "react";
 import EditModal from "./EditModal";
 import { eliminarProducto, cambiarEstadoVendido } from "./actions";
 
@@ -18,15 +18,28 @@ interface Producto {
   visible: boolean;
 }
 
+const CATEGORIAS: { key: string; label: string }[] = [
+  { key: "IPHONE", label: "iPhone" },
+  { key: "MAC", label: "Mac" },
+  { key: "IPAD", label: "iPad" },
+  { key: "ACCESORIOS", label: "Accesorios" },
+  { key: "OTROS", label: "Otros" },
+];
+
+function estaVendido(p: Producto) {
+  return p.stock === 0 || !p.visible;
+}
+
 export default function StockList({ productos }: { productos: Producto[] }) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Producto | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [search, setSearch] = useState("");
+  const [selectedCategoria, setSelectedCategoria] = useState<string | null>(null);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  // Cerrar menú al hacer clic fuera
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -37,13 +50,31 @@ export default function StockList({ productos }: { productos: Producto[] }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Cuánto queda disponible por categoría (lo vendido no suma)
+  const totalesPorCategoria = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const cat of CATEGORIAS) map[cat.key] = 0;
+    for (const p of productos) {
+      if (!estaVendido(p) && map[p.categoria] !== undefined) {
+        map[p.categoria] += 1;
+      }
+    }
+    return map;
+  }, [productos]);
+
+  const productosFiltrados = useMemo(() => {
+    return productos.filter((p) => {
+      const coincideBusqueda = p.modelo.toLowerCase().includes(search.trim().toLowerCase());
+      const coincideCategoria = !selectedCategoria || p.categoria === selectedCategoria;
+      return coincideBusqueda && coincideCategoria;
+    });
+  }, [productos, search, selectedCategoria]);
+
   const handleToggleVendido = (p: Producto) => {
-    const esVendido = p.stock === 0 || !p.visible;
+    const vendidoActual = estaVendido(p);
     setOpenMenuId(null);
     startTransition(async () => {
-      // Si está vendido, queremos marcarlo como disponible (!esVendido = false).
-      // Si está disponible, queremos marcarlo como vendido (!esVendido = true).
-      await cambiarEstadoVendido(p.id, !esVendido);
+      await cambiarEstadoVendido(p.id, !vendidoActual);
     });
   };
 
@@ -66,246 +97,295 @@ export default function StockList({ productos }: { productos: Producto[] }) {
 
   return (
     <>
-      <div style={{ display: "grid", gap: 14 }}>
-        {productos.map((p) => {
-          const esVendido = p.stock === 0 || !p.visible;
-          const isMenuOpen = openMenuId === p.id;
+      {/* Buscador */}
+      <div style={{ marginBottom: 20 }}>
+        <div className="search-wrap" style={{ flex: "none", width: "100%", maxWidth: 340 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="7" />
+            <path d="M21 21l-4.3-4.3" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar por modelo..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+      </div>
 
+      {/* Tarjetas de categoría con total */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+          gap: 12,
+          marginBottom: 28,
+        }}
+      >
+        {CATEGORIAS.map((cat) => {
+          const activa = selectedCategoria === cat.key;
           return (
-            <div
-              key={p.id}
+            <button
+              key={cat.key}
+              type="button"
+              onClick={() => setSelectedCategoria(activa ? null : cat.key)}
               style={{
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "16px 20px",
-                background: esVendido ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.03)",
+                flexDirection: "column",
+                gap: 6,
+                padding: "16px 18px",
                 borderRadius: 12,
-                border: esVendido ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(255,255,255,0.08)",
-                position: "relative",
-                zIndex: isMenuOpen ? 50 : 1,
-                transition: "background 0.15s ease, border-color 0.15s ease",
+                border: activa ? "1px solid var(--accent-strong)" : "1px solid var(--border)",
+                background: activa ? "rgba(106,166,255,0.12)" : "rgba(255,255,255,0.03)",
+                color: "var(--text)",
+                textAlign: "left",
+                cursor: "pointer",
+                transition: "all 0.15s ease",
               }}
             >
-              <div style={{ flex: 1, minWidth: 0, paddingRight: 16, opacity: esVendido ? 0.75 : 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <span style={{ fontWeight: 600, fontSize: "1.1rem" }}>{p.modelo}</span>
-
-                  <span
-                    style={{
-                      fontSize: "0.78rem",
-                      fontWeight: 600,
-                      padding: "2px 8px",
-                      borderRadius: 6,
-                      background: p.estado === "NUEVO" ? "rgba(34, 197, 94, 0.15)" : "rgba(234, 179, 8, 0.15)",
-                      color: p.estado === "NUEVO" ? "#4ade80" : "#facc15",
-                      border: p.estado === "NUEVO" ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid rgba(234, 179, 8, 0.3)",
-                    }}
-                  >
-                    {p.estado}
-                  </span>
-
-                  {esVendido && (
-                    <span
-                      style={{
-                        fontSize: "0.78rem",
-                        fontWeight: 700,
-                        padding: "2px 8px",
-                        borderRadius: 6,
-                        background: "rgba(239, 68, 68, 0.15)",
-                        color: "#ef4444",
-                        border: "1px solid rgba(239, 68, 68, 0.3)",
-                      }}
-                    >
-                      VENDIDO
-                    </span>
-                  )}
-                </div>
-
-                <div style={{ fontSize: "0.88rem", color: "var(--text-muted)", marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
-                  <span>Cat: <b>{p.categoria}</b></span>
-                  <span>Color: <b>{p.color || "—"}</b></span>
-                  <span>Memoria: <b>{p.memoria || "—"}</b></span>
-                  <span>Batería: <b>{p.bateria || "—"}</b></span>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#38bdf8" }}>
-                    USD {p.precioVenta}
-                  </div>
-                  {p.precioCosto && (
-                    <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                      Costo: USD {p.precioCosto}
-                    </div>
-                  )}
-                </div>
-
-                {/* Botón 3 puntitos */}
-                <div style={{ position: "relative" }} ref={isMenuOpen ? menuRef : null}>
-                  <button
-                    type="button"
-                    onClick={() => setOpenMenuId(isMenuOpen ? null : p.id)}
-                    aria-label="Opciones de producto"
-                    style={{
-                      background: isMenuOpen ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)",
-                      border: "1px solid var(--border)",
-                      borderRadius: 8,
-                      width: 36,
-                      height: 36,
-                      color: "var(--text)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      transition: "all 0.15s ease",
-                    }}
-                  >
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                      <circle cx="12" cy="5" r="2" />
-                      <circle cx="12" cy="12" r="2" />
-                      <circle cx="12" cy="19" r="2" />
-                    </svg>
-                  </button>
-
-                  {/* Menú desplegable flotante con fondo sólido y z-index adecuado */}
-                  {isMenuOpen && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        right: 0,
-                        top: "calc(100% + 6px)",
-                        minWidth: 200,
-                        background: "#181a20",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                        boxShadow: "0 14px 35px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05)",
-                        padding: 6,
-                        zIndex: 100,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 2,
-                      }}
-                    >
-                      {/* Editar */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenMenuId(null);
-                          setEditingProduct(p);
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          width: "100%",
-                          padding: "10px 14px",
-                          border: "none",
-                          background: "transparent",
-                          borderRadius: 8,
-                          color: "var(--text)",
-                          fontSize: "0.88rem",
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          textAlign: "left",
-                          whiteSpace: "nowrap",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                      >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                        Editar producto
-                      </button>
-
-                      {/* Marcar como vendido / disponible */}
-                      <button
-                        type="button"
-                        onClick={() => handleToggleVendido(p)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          width: "100%",
-                          padding: "10px 14px",
-                          border: "none",
-                          background: "transparent",
-                          borderRadius: 8,
-                          color: "var(--text)",
-                          fontSize: "0.88rem",
-                          fontWeight: 500,
-                          cursor: "pointer",
-                          textAlign: "left",
-                          whiteSpace: "nowrap",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                      >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          {esVendido ? (
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                          ) : (
-                            <path d="M9 11l3 3L22 4" />
-                          )}
-                        </svg>
-                        {esVendido ? "Marcar como disponible" : "Marcar como vendido"}
-                      </button>
-
-                      <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
-
-                      {/* Eliminar producto (en rojo) */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenMenuId(null);
-                          setDeletingProduct(p);
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 10,
-                          width: "100%",
-                          padding: "10px 14px",
-                          border: "none",
-                          background: "transparent",
-                          borderRadius: 8,
-                          color: "#ef4444",
-                          fontSize: "0.88rem",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          textAlign: "left",
-                          whiteSpace: "nowrap",
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
-                      >
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                        Eliminar producto
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>{cat.label}</span>
+              <span style={{ fontSize: "1.6rem", fontWeight: 700 }}>{totalesPorCategoria[cat.key]}</span>
+            </button>
           );
         })}
       </div>
 
-      {/* Modal de edición */}
-      {editingProduct && (
-        <EditModal
-          producto={editingProduct}
-          onClose={() => setEditingProduct(null)}
-        />
+      {productosFiltrados.length === 0 ? (
+        <div style={{ padding: 40, background: "rgba(255,255,255,0.03)", border: "1px solid var(--border)", borderRadius: 12, textAlign: "center", color: "var(--text-muted)" }}>
+          No se encontraron productos con ese filtro.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gap: 14 }}>
+          {productosFiltrados.map((p) => {
+            const vendida = estaVendido(p);
+            const isMenuOpen = openMenuId === p.id;
+
+            return (
+              <div
+                key={p.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  padding: "16px 20px",
+                  background: vendida ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.03)",
+                  borderRadius: 12,
+                  border: vendida ? "1px solid rgba(239,68,68,0.2)" : "1px solid rgba(255,255,255,0.08)",
+                  position: "relative",
+                  zIndex: isMenuOpen ? 50 : 1,
+                  transition: "background 0.15s ease, border-color 0.15s ease",
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0, paddingRight: 16, opacity: vendida ? 0.75 : 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: 600, fontSize: "1.1rem" }}>{p.modelo}</span>
+
+                    <span
+                      style={{
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
+                        padding: "2px 8px",
+                        borderRadius: 6,
+                        background: p.estado === "NUEVO" ? "rgba(34, 197, 94, 0.15)" : "rgba(234, 179, 8, 0.15)",
+                        color: p.estado === "NUEVO" ? "#4ade80" : "#facc15",
+                        border: p.estado === "NUEVO" ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid rgba(234, 179, 8, 0.3)",
+                      }}
+                    >
+                      {p.estado}
+                    </span>
+
+                    {vendida && (
+                      <span
+                        style={{
+                          fontSize: "0.78rem",
+                          fontWeight: 700,
+                          padding: "2px 8px",
+                          borderRadius: 6,
+                          background: "rgba(239, 68, 68, 0.15)",
+                          color: "#ef4444",
+                          border: "1px solid rgba(239, 68, 68, 0.3)",
+                        }}
+                      >
+                        VENDIDO
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: "0.88rem", color: "var(--text-muted)", marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    <span>Cat: <b>{p.categoria}</b></span>
+                    <span>Color: <b>{p.color || "—"}</b></span>
+                    <span>Memoria: <b>{p.memoria || "—"}</b></span>
+                    <span>Batería: <b>{p.bateria || "—"}</b></span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#38bdf8" }}>
+                      USD {p.precioVenta}
+                    </div>
+                    {p.precioCosto && (
+                      <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                        Costo: USD {p.precioCosto}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ position: "relative" }} ref={isMenuOpen ? menuRef : null}>
+                    <button
+                      type="button"
+                      onClick={() => setOpenMenuId(isMenuOpen ? null : p.id)}
+                      aria-label="Opciones de producto"
+                      style={{
+                        background: isMenuOpen ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        width: 36,
+                        height: 36,
+                        color: "var(--text)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="12" cy="5" r="2" />
+                        <circle cx="12" cy="12" r="2" />
+                        <circle cx="12" cy="19" r="2" />
+                      </svg>
+                    </button>
+
+                    {isMenuOpen && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          right: 0,
+                          top: "calc(100% + 6px)",
+                          minWidth: 200,
+                          background: "#181a20",
+                          border: "1px solid var(--border)",
+                          borderRadius: 12,
+                          boxShadow: "0 14px 35px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05)",
+                          padding: 6,
+                          zIndex: 100,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            setEditingProduct(p);
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            width: "100%",
+                            padding: "10px 14px",
+                            border: "none",
+                            background: "transparent",
+                            borderRadius: 8,
+                            color: "var(--text)",
+                            fontSize: "0.88rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            textAlign: "left",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                          Editar producto
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleToggleVendido(p)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            width: "100%",
+                            padding: "10px 14px",
+                            border: "none",
+                            background: "transparent",
+                            borderRadius: 8,
+                            color: "var(--text)",
+                            fontSize: "0.88rem",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            textAlign: "left",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            {vendida ? (
+                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                            ) : (
+                              <path d="M9 11l3 3L22 4" />
+                            )}
+                          </svg>
+                          {vendida ? "Marcar como disponible" : "Marcar como vendido"}
+                        </button>
+
+                        <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenMenuId(null);
+                            setDeletingProduct(p);
+                          }}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            width: "100%",
+                            padding: "10px 14px",
+                            border: "none",
+                            background: "transparent",
+                            borderRadius: 8,
+                            color: "#ef4444",
+                            fontSize: "0.88rem",
+                            fontWeight: 600,
+                            cursor: "pointer",
+                            textAlign: "left",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(239, 68, 68, 0.12)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                          Eliminar producto
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
 
-      {/* Modal de aviso para eliminar producto */}
+      {editingProduct && (
+        <EditModal producto={editingProduct} onClose={() => setEditingProduct(null)} />
+      )}
+
       {deletingProduct && (
         <div
           style={{
