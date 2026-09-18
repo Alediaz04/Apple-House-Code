@@ -32,6 +32,7 @@ model Producto {
   bateria     String?                         // solo aplica a usados
   precioCosto Float?                          // lo que le costó a Apple House (privado, no se muestra en la web pública)
   precioVenta Float                           // precio que ve el cliente
+  moneda      String    @default("USD")       // USD o ARS
   stock       Int       @default(1)           // cantidad disponible
   visible     Boolean   @default(true)        // false = oculto de la web pública sin borrarlo
   imagen      String?                         // ruta o URL de la foto (lo conectamos en el próximo paso)

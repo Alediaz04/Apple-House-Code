@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { Categoria } from "@prisma/client";
 
-const CATEGORIAS_ACCESORIOS = ["ACCESORIOS", "OTROS"] as const;
+const CATEGORIAS_ACCESORIOS: Categoria[] = ["ACCESORIOS", "OTROS"];
 
 export default async function VentasAccesoriosPage() {
   const vendidos = await prisma.producto.findMany({

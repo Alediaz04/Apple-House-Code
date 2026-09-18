@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useTransition, useMemo } from "react";
 import EditModal from "./EditModal";
 import { eliminarProducto, cambiarEstadoVendido } from "./actions";
+import { ColorDisplay } from "@/components/ColorPalettePicker";
 
 interface Producto {
   id: string;
@@ -211,9 +212,11 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                     )}
                   </div>
 
-                  <div style={{ fontSize: "0.88rem", color: "var(--text-muted)", marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: "0.88rem", color: "var(--text-muted)", marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                     <span>Cat: <b>{p.categoria}</b></span>
-                    <span>Color: <b>{p.color || "—"}</b></span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                      Color: <ColorDisplay colorString={p.color} showName={true} size="sm" />
+                    </span>
                     <span>Memoria: <b>{p.memoria || "—"}</b></span>
                     <span>Batería: <b>{p.bateria || "—"}</b></span>
                   </div>

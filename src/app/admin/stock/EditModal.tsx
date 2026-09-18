@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { editarProducto } from "./actions";
+import { ColorPalettePicker } from "@/components/ColorPalettePicker";
 
 interface ProductoItem {
   id: string;
@@ -23,6 +24,19 @@ const CATEGORIAS = [
   { value: "OTROS", label: "📦 Otros" },
 ];
 
+function parseMemoria(memoriaStr?: string | null) {
+  if (!memoriaStr) return { cantidad: "", unidad: "GB" };
+  const trimmed = memoriaStr.trim();
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(GB|TB|MB)?$/i);
+  if (match) {
+    return {
+      cantidad: match[1],
+      unidad: (match[2] || "GB").toUpperCase(),
+    };
+  }
+  return { cantidad: trimmed, unidad: "GB" };
+}
+
 export default function EditModal({
   producto,
   onClose,
@@ -35,6 +49,8 @@ export default function EditModal({
   );
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const initialMemoria = parseMemoria(producto.memoria);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -170,30 +186,43 @@ export default function EditModal({
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="color" className="form-label">
+            <div className="form-group col-span-2">
+              <label className="form-label">
                 Color
               </label>
-              <input
-                id="color"
-                name="color"
-                defaultValue={producto.color || ""}
-                placeholder="Ej: Natural Titanium"
-                className="form-input"
-              />
+              <ColorPalettePicker initialValue={producto.color} />
             </div>
 
             <div className="form-group">
-              <label htmlFor="memoria" className="form-label">
+              <label htmlFor="memoriaCantidad" className="form-label">
                 Memoria
               </label>
-              <input
-                id="memoria"
-                name="memoria"
-                defaultValue={producto.memoria || ""}
-                placeholder="Ej: 128 GB"
-                className="form-input"
-              />
+              <div style={{ display: "flex", gap: "8px" }}>
+                <div className="input-wrapper" style={{ flex: 1 }}>
+                  <input
+                    id="memoriaCantidad"
+                    name="memoriaCantidad"
+                    type="number"
+                    min="1"
+                    step="any"
+                    defaultValue={initialMemoria.cantidad}
+                    placeholder="Ej: 128, 256, 1"
+                    className="form-input"
+                  />
+                </div>
+                <div className="select-wrapper" style={{ width: "95px" }}>
+                  <select
+                    id="memoriaUnidad"
+                    name="memoriaUnidad"
+                    defaultValue={initialMemoria.unidad}
+                    className="form-select"
+                  >
+                    <option value="GB">GB</option>
+                    <option value="TB">TB</option>
+                    <option value="MB">MB</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
             <div className="form-group col-span-2">

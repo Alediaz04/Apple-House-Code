@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { Categoria } from "@prisma/client";
 
-const CATEGORIAS_EQUIPOS = ["IPHONE", "MAC", "IPAD"] as const;
+const CATEGORIAS_EQUIPOS: Categoria[] = ["IPHONE", "MAC", "IPAD"];
 
 export default async function VentasEquiposPage() {
   const vendidos = await prisma.producto.findMany({
