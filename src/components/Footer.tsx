@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { WaIcon } from "./WaIcon";
 import { waLink } from "@/lib/products";
 
@@ -8,8 +9,11 @@ export default function Footer() {
       <footer>
         <div className="container">
           <div className="footer-row">
-            <div className="brand-name">
-              Apple House <span style={{ color: "var(--text-muted)" }}>— Ciudad, Mendoza</span>
+            <div className="brand-name" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Image src="/logo.png" alt="Apple House" width={32} height={32} style={{ borderRadius: "50%", objectFit: "cover" }} unoptimized />
+              <div>
+                Apple House <span style={{ color: "var(--text-muted)" }}>— Ciudad, Mendoza</span>
+              </div>
             </div>
             <div className="social-row">
               <a href="https://www.instagram.com/applehousepipo" target="_blank" rel="noopener" aria-label="Instagram">
