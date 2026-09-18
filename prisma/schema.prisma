@@ -22,6 +22,12 @@ enum Estado {
   USADO
 }
 
+enum EstadoReparacion {
+  PENDIENTE
+  ENTREGADO
+}
+
+
 model Producto {
   id          String    @id @default(cuid()) // id único autogenerado
   modelo      String                          // ej: "iPhone 13 Pro Max"
@@ -37,4 +43,20 @@ model Producto {
   imagen      String?                         // ruta o URL de la foto (lo conectamos en el próximo paso)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+}
+
+
+model Reparacion {
+  id             String            @id @default(cuid())
+  nombreCliente  String
+  telefono       String
+  email          String?
+  dispositivo    String
+  fechaIngreso   DateTime
+  cobro          Float?
+  costoRepuestos Float?
+  descripcion    String?
+  estado         EstadoReparacion  @default(PENDIENTE)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 }
