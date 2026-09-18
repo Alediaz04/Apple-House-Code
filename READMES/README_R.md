@@ -151,6 +151,8 @@ Los campos opcionales pueden quedar vacíos.
 
 Los importes también se convierten a valores numéricos antes de guardarse.
 
+Adicionalmente, se estableció un tope máximo de $99.999.999 para los campos `cobro` y `costoRepuestos`. Esto evita que un error de tipeo (por ejemplo, agregar dígitos de más sin darse cuenta) genere un importe absurdo que rompa el cálculo de las estadísticas o el diseño de las tarjetas. La validación se aplica tanto en `crearReparacion` como en `editarReparacion`, dentro de `actions.ts`.
+
 ---
 
 # 7. `actions.ts`
@@ -673,9 +675,16 @@ Antes de realizar cambios estructurales en la base de datos se debe comprobar qu
 
 # 33. Formato de dinero
 
-Las tarjetas de estadísticas utilizan `Intl.NumberFormat` para mostrar los importes con formato argentino.
+A diferencia del módulo de Stock, que maneja los precios en dólares (USD), Reparaciones registra todos sus importes en pesos argentinos (ARS), ya que así se cobran las reparaciones en el local.
 
-La configuración utilizada permite mostrar los valores como moneda y sin decimales en las estadísticas.
+Para mostrar los valores se utilizan dos funciones equivalentes:
+
+- `formatearDinero`, en `page.tsx`, para las tres tarjetas de estadísticas.
+- `formatearMonto`, en `ReparacionesList.tsx`, para los importes de cada reparación individual.
+
+Ambas funciones usan `toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })`, para mostrar los montos con el formato correcto en Argentina: punto para separar los miles y coma para los decimales (por ejemplo, `AR$200.000,00`).
+
+En una primera versión se usó `toFixed(2)`, que solo agrega los decimales pero no el separador de miles, mostrando montos grandes de forma poco clara (por ejemplo `200000.00` en vez de `200.000,00`). Se corrigió reemplazando `toFixed` por `toLocaleString` en ambos archivos.
 
 ---
 
@@ -726,7 +735,7 @@ Se ajustó la apariencia de las opciones para mantener una lectura correcta.
 
 ---
 
-## Rango personalizado
+## Rango personalizado (reinicio de campos)
 
 Los campos de fecha personalizados se reiniciaban al escribir determinados valores.
 
@@ -755,6 +764,53 @@ Se ajustó la distribución para utilizar una cuadrícula adaptable:
 - Las tarjetas se distribuyen automáticamente.
 - Se mantiene un ancho mínimo.
 - En pantallas pequeñas pueden acomodarse en varias filas.
+
+---
+
+## Formulario no se reiniciaba tras guardar
+
+Al registrar una reparación exitosamente, los campos del formulario conservaban los valores cargados en vez de vaciarse, aunque el mensaje de éxito sí se mostraba correctamente.
+
+Se solucionó agregando una propiedad `key` dinámica al elemento `<form>` en `ReparacionForm.tsx`, que cambia su valor cuando la operación es exitosa. Esto hace que React vuelva a montar el formulario desde cero, con todos los campos vacíos.
+
+---
+
+## Inconsistencia de moneda entre secciones
+
+Durante el desarrollo, las tres tarjetas de estadísticas mostraban los montos formateados como pesos, mientras que el formulario y el listado de reparaciones mostraban el prefijo `USD $`, heredado por error del módulo de Stock (que sí es en dólares).
+
+Se corrigió unificando el prefijo a `AR$` en los tres lugares: `page.tsx`, `ReparacionForm.tsx` y `ReparacionesList.tsx`.
+
+---
+
+## Montos muy grandes desbordaban las tarjetas de estadísticas
+
+Al cargar un importe con una cantidad excesiva de dígitos (por error de carga), el número no tenía forma de cortarse dentro de la tarjeta y se superponía visualmente con las tarjetas vecinas.
+
+Se solucionó de dos formas complementarias:
+
+1. Se agregó `overflowWrap: "anywhere"` al estilo de los montos en las tarjetas de estadísticas, para que un número muy largo se corte dentro de su propia tarjeta en vez de desbordarla.
+2. Se limitó el valor máximo permitido para `cobro` y `costoRepuestos` a $99.999.999 (ver sección 6), evitando que este tipo de dato llegue a mostrarse en primer lugar.
+
+---
+
+## El selector "Rango personalizado" no mostraba los campos de fecha
+
+Al elegir la opción "Rango personalizado" en el filtro de período, los campos "Desde" y "Hasta" no aparecían en pantalla.
+
+La causa era una condición en la función `cambiarRango`, dentro de `FiltroFecha.tsx`, que directamente no hacía nada cuando el valor elegido era `"personalizado"`:
+
+```ts
+function cambiarRango(rango: string) {
+  if (rango === "personalizado") {
+    return;
+  }
+  ...
+```
+
+Como el resto del componente decide si mostrar los campos de fecha en base al parámetro `rango` de la URL, y esta función nunca llegaba a actualizar la URL cuando el valor era `"personalizado"`, los campos nunca se mostraban.
+
+Se solucionó eliminando esa condición, permitiendo que la función actualice la URL con `rango=personalizado` igual que con cualquier otra opción. El botón "Aplicar rango" sigue siendo el que efectivamente dispara la consulta con las fechas elegidas, sin cambios.
 
 ---
 
@@ -802,9 +858,17 @@ Se probaron:
 - Mes.
 - Personalizado.
 
+Se volvió a probar específicamente el filtro Personalizado luego de corregir el problema descripto en la sección 35, confirmando que los campos "Desde" y "Hasta" se muestran correctamente al seleccionar esa opción.
+
 ## Fechas
 
 Se comprobó que las fechas ingresadas no se desplacen al día anterior.
+
+## Moneda y validaciones
+
+Se comprobó que los importes se muestran en pesos argentinos (`AR$`), con separador de miles y dos decimales, tanto en las tarjetas de estadísticas como en el formulario y el listado.
+
+Se comprobó que un importe mayor a $99.999.999 en los campos "Cobro" o "Costo de repuestos" es rechazado por el servidor, evitando que se guarde y que rompa la visualización de las tarjetas.
 
 ## Compilación
 
@@ -815,6 +879,8 @@ npm.cmd run build
 ```
 
 La compilación finalizó correctamente.
+
+Se volvió a ejecutar `npm.cmd run build` luego de aplicar las correcciones de moneda, validaciones y filtro personalizado, confirmando que la compilación de producción sigue finalizando correctamente.
 
 ---
 
@@ -913,6 +979,8 @@ Actualmente permite:
 - Filtrar estadísticas por período.
 - Utilizar rangos personalizados.
 - Mantener correctamente las fechas locales.
+- Mostrar los importes en pesos argentinos, con formato de miles y decimales.
+- Validar un tope máximo de importe para evitar errores de carga.
 - Persistir los datos mediante Prisma y PostgreSQL.
 
 El módulo fue probado y la compilación de producción finalizó correctamente.
