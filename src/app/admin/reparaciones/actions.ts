@@ -1,4 +1,4 @@
-﻿"use server";
+"use server";
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
@@ -14,11 +14,8 @@ export async function crearReparacion(
   _prev: CrearReparacionState,
   formData: FormData
 ): Promise<CrearReparacionState> {
-  function convertirFechaLocal(fecha: string) {
-  const [year, month, day] = fecha.split("-").map(Number);
 
-  return new Date(year, month - 1, day);
-}
+
   const nombreCliente = String(formData.get("nombreCliente") || "").trim();
   const telefono = String(formData.get("telefono") || "").trim();
   const email = String(formData.get("email") || "").trim() || null;
