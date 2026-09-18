@@ -21,6 +21,8 @@ const CATEGORIAS = [
   { value: "MAC", label: "💻 Mac" },
   { value: "IPAD", label: "✏️ iPad" },
   { value: "ACCESORIOS", label: "🎧 Accesorios" },
+  { value: "PLAY", label: "🎮 Play" },
+  { value: "FUNDAS", label: "📱 Fundas" },
   { value: "OTROS", label: "📦 Otros" },
 ];
 

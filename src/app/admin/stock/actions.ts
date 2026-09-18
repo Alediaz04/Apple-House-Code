@@ -17,24 +17,6 @@ export async function eliminarProducto(id: string) {
   }
 }
 
-export async function cambiarEstadoVendido(id: string, marcarComoVendido: boolean) {
-  try {
-    await prisma.producto.update({
-      where: { id },
-      data: {
-        stock: marcarComoVendido ? 0 : 1,
-        visible: marcarComoVendido ? false : true,
-      },
-    });
-    revalidatePath("/admin/stock");
-    revalidatePath("/");
-    return { ok: true };
-  } catch (error) {
-    console.error("Error al cambiar estado de venta:", error);
-    return { ok: false, error: "No se pudo actualizar el estado del producto." };
-  }
-}
-
 export type EditarProductoState = { ok: boolean; error?: string } | null;
 
 export async function editarProducto(
@@ -64,7 +46,7 @@ export async function editarProducto(
   const precioCosto = precioCostoRaw ? Number(precioCostoRaw) : null;
 
   if (!modelo) return { ok: false, error: "Falta el modelo." };
-  if (!["IPHONE", "MAC", "IPAD", "ACCESORIOS", "OTROS"].includes(categoria)) {
+  if (!["IPHONE", "MAC", "IPAD", "ACCESORIOS", "PLAY", "FUNDAS", "OTROS"].includes(categoria)) {
     return { ok: false, error: "Categoría inválida." };
   }
   if (!["NUEVO", "USADO"].includes(estado)) {
@@ -79,7 +61,7 @@ export async function editarProducto(
       where: { id },
       data: {
         modelo,
-        categoria: categoria as "IPHONE" | "MAC" | "IPAD" | "ACCESORIOS" | "OTROS",
+        categoria: categoria as "IPHONE" | "MAC" | "IPAD" | "ACCESORIOS" | "PLAY" | "FUNDAS" | "OTROS",
         estado: estado as "NUEVO" | "USADO",
         color,
         memoria,

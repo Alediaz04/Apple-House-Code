@@ -37,7 +37,7 @@ export async function crearProducto(
 
   // Validaciones básicas del lado del servidor (nunca confiar solo en el formulario)
   if (!modelo) return { ok: false, error: "Falta el modelo." };
-  if (!["IPHONE", "MAC", "IPAD", "ACCESORIOS", "OTROS"].includes(categoria)) {
+  if (!["IPHONE", "MAC", "IPAD", "ACCESORIOS", "PLAY", "FUNDAS", "OTROS"].includes(categoria)) {
     return { ok: false, error: "Categoría inválida." };
   }
   if (!["NUEVO", "USADO"].includes(estado)) {
@@ -51,7 +51,7 @@ export async function crearProducto(
   await prisma.producto.create({
     data: {
       modelo,
-      categoria: categoria as "IPHONE" | "MAC" | "IPAD" | "ACCESORIOS" | "OTROS",
+      categoria: categoria as "IPHONE" | "MAC" | "IPAD" | "ACCESORIOS" | "PLAY" | "FUNDAS" | "OTROS",
       estado: estado as "NUEVO" | "USADO",
       color,
       memoria,

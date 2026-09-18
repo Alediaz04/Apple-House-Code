@@ -10,6 +10,8 @@ const CATEGORIAS = [
   { value: "MAC", label: "💻 Mac" },
   { value: "IPAD", label: "✏️ iPad" },
   { value: "ACCESORIOS", label: "🎧 Accesorios" },
+  { value: "PLAY", label: "🎮 Play" },
+  { value: "FUNDAS", label: "📱 Fundas" },
   { value: "OTROS", label: "📦 Otros" },
 ];
 
@@ -33,7 +35,7 @@ export default function ProductoForm() {
 
   return (
     <div className="admin-form-card">
-      <form action={formAction} key={state?.ok ? Math.random() : "form"} className="admin-form">
+      <form action={formAction} className="admin-form">
         {/* Sección 1: Información Principal */}
         <div className="form-section">
           <div className="form-section-header">
