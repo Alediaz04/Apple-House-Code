@@ -13,18 +13,14 @@ export default function FiltroFecha() {
   const [hasta, setHasta] = useState(searchParams.get("hasta") ?? "");
 
   function cambiarRango(rango: string) {
-    if (rango === "personalizado") {
-      return;
-    }
+  const params = new URLSearchParams(searchParams.toString());
 
-    const params = new URLSearchParams(searchParams.toString());
+  params.set("rango", rango);
+  params.delete("desde");
+  params.delete("hasta");
 
-    params.set("rango", rango);
-    params.delete("desde");
-    params.delete("hasta");
-
-    router.push(`/admin/reparaciones?${params.toString()}`);
-  }
+  router.push(`/admin/reparaciones?${params.toString()}`);
+}
 
   function aplicarRango() {
     if (!desde || !hasta) {

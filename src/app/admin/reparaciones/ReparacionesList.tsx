@@ -45,7 +45,7 @@ function formatearFechaInput(fecha: Date | string) {
 function formatearMonto(monto: number | null) {
   if (monto === null) return "-";
 
-  return `USD $${monto.toFixed(2)}`;
+  return `$${monto.toFixed(2)}`;
 }
 
 export default function ReparacionesList({
@@ -169,7 +169,7 @@ async function guardarEdicion(event: React.FormEvent<HTMLFormElement>) {
                 alignItems: "flex-start",
                 gap: 20,
                 paddingBottom: 20,
-                borderBottom: "1px solid #e5e5e5",
+                borderBottom: "1px solid var(--border)",
               }}
             >
               <div>
@@ -205,21 +205,25 @@ async function guardarEdicion(event: React.FormEvent<HTMLFormElement>) {
                 }}
               >
                 <span
-                 style={{
-  padding: "7px 12px",
-  borderRadius: 999,
-  fontSize: 12,
-  fontWeight: 700,
-  background:
-    reparacion.estado === "PENDIENTE"
-      ? "#fff3cd"
-      : "#d1e7dd",
-  color:
-    reparacion.estado === "PENDIENTE"
-      ? "#7a5a00"
-      : "#155d3a",
-}}
-                >
+  style={{
+    padding: "7px 12px",
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: 700,
+    background:
+      reparacion.estado === "PENDIENTE"
+        ? "rgba(234, 179, 8, 0.15)"
+        : "rgba(34, 197, 94, 0.15)",
+    color:
+      reparacion.estado === "PENDIENTE"
+        ? "#facc15"
+        : "#4ade80",
+    border:
+      reparacion.estado === "PENDIENTE"
+        ? "1px solid rgba(234, 179, 8, 0.3)"
+        : "1px solid rgba(34, 197, 94, 0.3)",
+  }}
+>
                   {reparacion.estado}
                 </span>
 
@@ -352,7 +356,7 @@ async function guardarEdicion(event: React.FormEvent<HTMLFormElement>) {
             <div
               style={{
                 padding: "20px 0",
-                borderBottom: "1px solid #e5e5e5",
+                borderBottom: "1px solid var(--border)",
               }}
             >
               <p
@@ -386,7 +390,7 @@ async function guardarEdicion(event: React.FormEvent<HTMLFormElement>) {
                 gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                 gap: 24,
                 padding: "20px 0",
-                borderBottom: "1px solid #e5e5e5",
+                borderBottom: "1px solid var(--border)",
               }}
             >
               <div>

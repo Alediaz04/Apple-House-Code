@@ -13,7 +13,11 @@ export default function ReparacionForm() {
 
   return (
     <div className="admin-form-card">
-      <form action={formAction} className="admin-form">
+      <form
+  action={formAction}
+  key={state?.ok ? Math.random() : "form"}
+  className="admin-form"
+>
         <div className="form-section">
           <div className="form-section-header">
             <span className="section-number">1</span>
@@ -103,7 +107,7 @@ export default function ReparacionForm() {
                 Cobro
               </label>
               <div className="input-currency-wrapper">
-                <span className="currency-prefix">USD $</span>
+                <span className="currency-prefix">AR$</span>
                 <input
                   id="cobro"
                   name="cobro"
@@ -121,7 +125,7 @@ export default function ReparacionForm() {
                 Costo de repuestos
               </label>
               <div className="input-currency-wrapper">
-                <span className="currency-prefix">USD $</span>
+                <span className="currency-prefix">AR$</span>
                 <input
                   id="costoRepuestos"
                   name="costoRepuestos"

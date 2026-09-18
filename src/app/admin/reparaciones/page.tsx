@@ -101,11 +101,12 @@ export default async function ReparacionesPage({ searchParams }: Props) {
 
   const ganancia = facturadoTotal - costoRepuestosTotal;
 
-  const dinero = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
-    maximumFractionDigits: 0,
-  });
+  function formatearDinero(monto: number) {
+  return `AR$${monto.toLocaleString("es-AR", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
   return (
     <div className="admin-page-container">
@@ -151,14 +152,16 @@ export default async function ReparacionesPage({ searchParams }: Props) {
             Facturado total
           </p>
 
-          <strong
-            style={{
-              display: "block",
-              marginTop: 8,
-              fontSize: 26,
-            }}
+         <strong
+  style={{
+    display: "block",
+    marginTop: 8,
+    fontSize: 26,
+    overflowWrap: "anywhere",
+  }}
+
           >
-            {dinero.format(facturadoTotal)}
+               {formatearDinero(facturadoTotal)}
           </strong>
         </div>
 
@@ -180,14 +183,15 @@ export default async function ReparacionesPage({ searchParams }: Props) {
             Costo de repuestos
           </p>
 
-          <strong
-            style={{
-              display: "block",
-              marginTop: 8,
-              fontSize: 26,
-            }}
-          >
-            {dinero.format(costoRepuestosTotal)}
+         <strong
+  style={{
+    display: "block",
+    marginTop: 8,
+    fontSize: 26,
+    overflowWrap: "anywhere",
+  }}
+>
+               {formatearDinero(costoRepuestosTotal)}
           </strong>
         </div>
 
@@ -209,14 +213,15 @@ export default async function ReparacionesPage({ searchParams }: Props) {
             Ganancia
           </p>
 
-          <strong
-            style={{
-              display: "block",
-              marginTop: 8,
-              fontSize: 26,
-            }}
-          >
-            {dinero.format(ganancia)}
+         <strong
+  style={{
+    display: "block",
+    marginTop: 8,
+    fontSize: 26,
+    overflowWrap: "anywhere",
+  }}
+>
+               {formatearDinero(ganancia)}
           </strong>
         </div>
       </div>
