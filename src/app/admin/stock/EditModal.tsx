@@ -14,6 +14,8 @@ interface ProductoItem {
   bateria: string | null;
   precioVenta: number;
   precioCosto: number | null;
+  stock: number;
+  moneda?: string;
 }
 
 const CATEGORIAS = [
@@ -49,6 +51,7 @@ export default function EditModal({
   const [estadoSeleccionado, setEstadoSeleccionado] = useState<"NUEVO" | "USADO">(
     producto.estado as "NUEVO" | "USADO"
   );
+  const [moneda, setMoneda] = useState<string>(producto.moneda || "USD");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -240,12 +243,49 @@ export default function EditModal({
               />
             </div>
 
+            <div className="form-group col-span-2">
+              <label htmlFor="stock" className="form-label">
+                Cantidad en Stock <span className="req">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input
+                  id="stock"
+                  name="stock"
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+                  defaultValue={producto.stock}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-group col-span-2">
+              <label htmlFor="moneda" className="form-label">
+                Moneda <span className="req">*</span>
+              </label>
+              <div className="select-wrapper">
+                <select
+                  id="moneda"
+                  name="moneda"
+                  required
+                  value={moneda}
+                  onChange={(e) => setMoneda(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="USD">USD (Dólares)</option>
+                  <option value="ARS">ARS (Pesos)</option>
+                </select>
+              </div>
+            </div>
+
             <div className="form-group">
               <label htmlFor="precioVenta" className="form-label">
-                Precio Venta (USD) <span className="req">*</span>
+                Precio Venta ({moneda}) <span className="req">*</span>
               </label>
               <div className="input-currency-wrapper">
-                <span className="currency-prefix">USD $</span>
+                <span className="currency-prefix">{moneda} $</span>
                 <input
                   id="precioVenta"
                   name="precioVenta"
@@ -261,10 +301,10 @@ export default function EditModal({
 
             <div className="form-group">
               <label htmlFor="precioCosto" className="form-label">
-                Precio Costo (USD) <span className="hint">(Privado)</span>
+                Precio Costo ({moneda}) <span className="hint">(Privado)</span>
               </label>
               <div className="input-currency-wrapper">
-                <span className="currency-prefix">USD $</span>
+                <span className="currency-prefix">{moneda} $</span>
                 <input
                   id="precioCosto"
                   name="precioCosto"

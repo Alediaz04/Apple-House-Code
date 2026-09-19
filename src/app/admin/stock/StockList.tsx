@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useTransition } from "react";
 import EditModal from "./EditModal";
+import VentaModal from "./VentaModal";
 import { eliminarProducto, cambiarEstadoVendido } from "./actions";
 
 const CATEGORIAS = [
@@ -26,11 +27,13 @@ interface Producto {
   precioCosto: number | null;
   stock: number;
   visible: boolean;
+  moneda: string;
 }
 
 export default function StockList({ productos }: { productos: Producto[] }) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
+  const [vendingProduct, setVendingProduct] = useState<Producto | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Producto | null>(null);
   const [selectedCategoria, setSelectedCategoria] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -58,11 +61,15 @@ export default function StockList({ productos }: { productos: Producto[] }) {
   };
 
   const handleToggleVendido = (p: Producto) => {
-    const vendidoActual = p.stock === 0 || !p.visible;
+    const esVendido = p.stock === 0 || !p.visible;
     setOpenMenuId(null);
-    startTransition(async () => {
-      await cambiarEstadoVendido(p.id, !vendidoActual);
-    });
+    if (esVendido) {
+      startTransition(async () => {
+        await cambiarEstadoVendido(p.id, false);
+      });
+    } else {
+      setVendingProduct(p);
+    }
   };
 
   if (productos.length === 0) {
@@ -208,11 +215,11 @@ export default function StockList({ productos }: { productos: Producto[] }) {
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#38bdf8" }}>
-                    USD {p.precioVenta}
+                    {p.moneda || "USD"} ${p.precioVenta}
                   </div>
-                  {p.precioCosto && (
+                  {p.precioCosto !== null && p.precioCosto !== undefined && (
                     <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                      Costo: USD {p.precioCosto}
+                      Costo: {p.moneda || "USD"} ${p.precioCosto}
                     </div>
                   )}
                 </div>
@@ -382,6 +389,14 @@ export default function StockList({ productos }: { productos: Producto[] }) {
         <EditModal
           producto={editingProduct}
           onClose={() => setEditingProduct(null)}
+        />
+      )}
+
+      {/* Modal para registrar venta con cantidad custom */}
+      {vendingProduct && (
+        <VentaModal
+          producto={vendingProduct}
+          onClose={() => setVendingProduct(null)}
         />
       )}
 
