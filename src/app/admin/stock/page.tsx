@@ -12,9 +12,6 @@ export default async function AdminStockPage() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
         <div>
           <h1 style={{ marginBottom: 6 }}>STOCK DE PRODUCTOS</h1>
-          <p style={{ color: "var(--text-muted)" }}>
-            Listado completo de equipos en STOCK ({productos.length} equipos).
-          </p>
         </div>
         <Link href="/admin/agregar" className="btn btn-primary">
           + Agregar equipo
@@ -25,4 +22,3 @@ export default async function AdminStockPage() {
     </main>
   );
 }
-

@@ -29,6 +29,11 @@ const CATEGORIAS = [
   { value: "OTROS", label: "Otros", icon: "📦" },
 ] as const;
 
+function normalizarCategoria(categoria: string) {
+  const valor = categoria.trim().toUpperCase();
+  return valor === "OTRO" ? "OTROS" : valor;
+}
+
 export default function StockList({ productos }: { productos: Producto[] }) {
   const [search, setSearch] = useState("");
   const [selectedCategoria, setSelectedCategoria] = useState<string | null>(null);
@@ -49,10 +54,35 @@ export default function StockList({ productos }: { productos: Producto[] }) {
   }, []);
 
   const productosFiltrados = productos.filter((producto) => {
-    const matchesCategory = !selectedCategoria || producto.categoria === selectedCategoria;
-    const matchesSearch = producto.modelo.toLowerCase().includes(search.trim().toLowerCase());
+    const matchesCategory =
+      !selectedCategoria || normalizarCategoria(producto.categoria) === selectedCategoria;
+    const textoBusqueda = search.trim().toLowerCase();
+    const textoProducto = [
+      producto.modelo,
+      producto.categoria,
+      producto.color ?? "",
+      producto.memoria ?? "",
+      producto.bateria ?? "",
+    ]
+      .join(" ")
+      .toLowerCase();
+    const matchesSearch = !textoBusqueda || textoProducto.includes(textoBusqueda);
     return matchesCategory && matchesSearch;
   });
+  const stockTotal = productos
+    .filter((producto) => producto.stock > 0)
+    .reduce((total, producto) => total + producto.stock, 0);
+  const stockCategoria = selectedCategoria
+    ? productos
+        .filter(
+          (producto) =>
+            normalizarCategoria(producto.categoria) === selectedCategoria && producto.stock > 0,
+        )
+        .reduce((total, producto) => total + producto.stock, 0)
+    : stockTotal;
+  const categoriaSeleccionada = CATEGORIAS.find(
+    (categoria) => categoria.value === selectedCategoria,
+  );
 
   function confirmarEliminacion() {
     if (!deletingProduct) return;
@@ -69,6 +99,16 @@ export default function StockList({ productos }: { productos: Producto[] }) {
 
   return (
     <>
+      <p style={{ color: "var(--text-muted)", marginBottom: 20 }}>
+        {categoriaSeleccionada
+          ? `Stock disponible en ${categoriaSeleccionada.label}: ${stockCategoria} ${
+              stockCategoria === 1 ? "unidad" : "unidades"
+            }.`
+          : `Listado completo de equipos en stock: ${stockTotal} ${
+              stockTotal === 1 ? "unidad" : "unidades"
+            }.`}
+      </p>
+
       <div style={{ marginBottom: 20 }}>
         <input
           type="search"
@@ -89,7 +129,9 @@ export default function StockList({ productos }: { productos: Producto[] }) {
         }}
       >
         {CATEGORIAS.map((categoria) => {
-          const items = productos.filter((producto) => producto.categoria === categoria.value);
+          const items = productos.filter(
+            (producto) => normalizarCategoria(producto.categoria) === categoria.value,
+          );
           const stockTotal = items.reduce((total, producto) => total + producto.stock, 0);
           const selected = selectedCategoria === categoria.value;
           return (
@@ -210,6 +252,12 @@ export default function StockList({ productos }: { productos: Producto[] }) {
           );
         })}
       </div>
+
+      {productosFiltrados.length === 0 && (
+        <div className="admin-form-card" style={{ color: "var(--text-muted)", textAlign: "center" }}>
+          No se encontraron equipos con ese criterio de búsqueda.
+        </div>
+      )}
 
       {editingProduct && (
         <EditModal producto={editingProduct} onClose={() => setEditingProduct(null)} />
