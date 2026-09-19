@@ -52,3 +52,23 @@ model Venta {
   total          Float
   createdAt      DateTime @default(now())
 }
+
+enum EstadoReparacion {
+  PENDIENTE
+  ENTREGADO
+}
+
+model Reparacion {
+  id             String           @id @default(cuid())
+  nombreCliente  String
+  telefono       String
+  email          String?
+  dispositivo    String
+  fechaIngreso   DateTime
+  cobro          Float?
+  costoRepuestos Float?
+  descripcion    String?
+  estado         EstadoReparacion @default(PENDIENTE)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}

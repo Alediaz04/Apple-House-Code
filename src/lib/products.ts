@@ -13,6 +13,7 @@ export interface Producto {
   memoria: string;
   precio: number;
   stock?: number;
+  moneda?: string;
 }
 
 export async function getProductosDb(): Promise<Producto[]> {
@@ -33,6 +34,7 @@ export async function getProductosDb(): Promise<Producto[]> {
         memoria: p.memoria || "—",
         precio: p.precioVenta,
         stock: p.stock,
+        moneda: p.moneda || "USD",
       }));
     }
   } catch (error) {

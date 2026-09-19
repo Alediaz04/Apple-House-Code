@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { eliminarProducto } from "./actions";
 import EditModal from "./EditModal";
+import VentaModal from "./VentaModal";
+import { cambiarEstadoVendido, eliminarProducto } from "./actions";
 
 interface Producto {
   id: string;
@@ -39,6 +40,7 @@ export default function StockList({ productos }: { productos: Producto[] }) {
   const [selectedCategoria, setSelectedCategoria] = useState<string | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
+  const [vendingProduct, setVendingProduct] = useState<Producto | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Producto | null>(null);
   const [isPending, startTransition] = useTransition();
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -53,10 +55,10 @@ export default function StockList({ productos }: { productos: Producto[] }) {
     return () => document.removeEventListener("mousedown", closeMenu);
   }, []);
 
+  const textoBusqueda = search.trim().toLowerCase();
   const productosFiltrados = productos.filter((producto) => {
     const matchesCategory =
       !selectedCategoria || normalizarCategoria(producto.categoria) === selectedCategoria;
-    const textoBusqueda = search.trim().toLowerCase();
     const textoProducto = [
       producto.modelo,
       producto.categoria,
@@ -66,9 +68,9 @@ export default function StockList({ productos }: { productos: Producto[] }) {
     ]
       .join(" ")
       .toLowerCase();
-    const matchesSearch = !textoBusqueda || textoProducto.includes(textoBusqueda);
-    return matchesCategory && matchesSearch;
+    return matchesCategory && (!textoBusqueda || textoProducto.includes(textoBusqueda));
   });
+
   const stockTotal = productos
     .filter((producto) => producto.stock > 0)
     .reduce((total, producto) => total + producto.stock, 0);
@@ -86,11 +88,22 @@ export default function StockList({ productos }: { productos: Producto[] }) {
 
   function confirmarEliminacion() {
     if (!deletingProduct) return;
-    const id = deletingProduct.id;
     startTransition(async () => {
-      const result = await eliminarProducto(id);
+      const result = await eliminarProducto(deletingProduct.id);
       if (result.ok) setDeletingProduct(null);
     });
+  }
+
+  function cambiarDisponibilidad(producto: Producto) {
+    const vendido = producto.stock === 0 || !producto.visible;
+    setOpenMenuId(null);
+    if (vendido) {
+      startTransition(() => {
+        void cambiarEstadoVendido(producto.id, false);
+      });
+    } else {
+      setVendingProduct(producto);
+    }
   }
 
   if (productos.length === 0) {
@@ -114,9 +127,9 @@ export default function StockList({ productos }: { productos: Producto[] }) {
           type="search"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Buscar por modelo..."
+          placeholder="Buscar por modelo, categoría, color o memoria..."
           className="form-input"
-          style={{ maxWidth: 340 }}
+          style={{ maxWidth: 420 }}
         />
       </div>
 
@@ -132,7 +145,7 @@ export default function StockList({ productos }: { productos: Producto[] }) {
           const items = productos.filter(
             (producto) => normalizarCategoria(producto.categoria) === categoria.value,
           );
-          const stockTotal = items.reduce((total, producto) => total + producto.stock, 0);
+          const categoriaStock = items.reduce((total, producto) => total + producto.stock, 0);
           const selected = selectedCategoria === categoria.value;
           return (
             <button
@@ -155,7 +168,7 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                 {items.length} equipo(s)
               </div>
               <div style={{ color: "#38bdf8", fontWeight: 700, marginTop: 4 }}>
-                {stockTotal} disponible(s)
+                {categoriaStock} disponible(s)
               </div>
             </button>
           );
@@ -196,9 +209,16 @@ export default function StockList({ productos }: { productos: Producto[] }) {
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <strong style={{ color: "#38bdf8", whiteSpace: "nowrap" }}>
-                  {producto.moneda} {producto.precioVenta}
-                </strong>
+                <div style={{ textAlign: "right" }}>
+                  <strong style={{ color: "#38bdf8", whiteSpace: "nowrap" }}>
+                    {producto.moneda || "USD"} ${producto.precioVenta}
+                  </strong>
+                  {producto.precioCosto !== null && (
+                    <div style={{ fontSize: ".78rem", color: "var(--text-muted)" }}>
+                      Costo: {producto.moneda || "USD"} ${producto.precioCosto}
+                    </div>
+                  )}
+                </div>
                 <div style={{ position: "relative" }} ref={menuOpen ? menuRef : null}>
                   <button
                     type="button"
@@ -215,7 +235,7 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                         right: 0,
                         top: "calc(100% + 6px)",
                         zIndex: 10,
-                        minWidth: 170,
+                        minWidth: 210,
                         padding: 6,
                         background: "#181a20",
                         border: "1px solid var(--border)",
@@ -232,6 +252,14 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                         }}
                       >
                         Editar producto
+                      </button>
+                      <button
+                        type="button"
+                        className="admin-btn-secondary"
+                        style={{ width: "100%", justifyContent: "flex-start", marginTop: 4 }}
+                        onClick={() => cambiarDisponibilidad(producto)}
+                      >
+                        {agotado ? "Marcar como disponible" : "Marcar como vendido"}
                       </button>
                       <button
                         type="button"
@@ -262,7 +290,9 @@ export default function StockList({ productos }: { productos: Producto[] }) {
       {editingProduct && (
         <EditModal producto={editingProduct} onClose={() => setEditingProduct(null)} />
       )}
-
+      {vendingProduct && (
+        <VentaModal producto={vendingProduct} onClose={() => setVendingProduct(null)} />
+      )}
       {deletingProduct && (
         <div
           style={{
@@ -285,7 +315,12 @@ export default function StockList({ productos }: { productos: Producto[] }) {
               <button type="button" className="admin-btn-secondary" onClick={() => setDeletingProduct(null)}>
                 Cancelar
               </button>
-              <button type="button" className="admin-submit-btn" disabled={isPending} onClick={confirmarEliminacion}>
+              <button
+                type="button"
+                className="admin-submit-btn"
+                disabled={isPending}
+                onClick={confirmarEliminacion}
+              >
                 {isPending ? "Eliminando..." : "Sí, eliminar"}
               </button>
             </div>

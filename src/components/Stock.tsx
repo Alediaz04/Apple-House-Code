@@ -60,7 +60,8 @@ const ESTADOS: { value: Estado | "todos"; label: string }[] = [
 ];
 
 function consultarLink(p: Producto) {
-  return waLink(`Hola! Vi en la web que tienen ${p.modelo} (${p.color}, ${p.memoria}) a USD ${p.precio}. ¿Sigue disponible?`);
+  const m = p.moneda || "USD";
+  return waLink(`Hola! Vi en la web que tienen ${p.modelo} (${p.color}, ${p.memoria}) a ${m} $${p.precio}. ¿Sigue disponible?`);
 }
 
 export default function Stock({ initialProductos }: { initialProductos?: Producto[] }) {
@@ -167,7 +168,7 @@ export default function Stock({ initialProductos }: { initialProductos?: Product
                     {p.memoria && p.memoria !== "—" && <span>{p.memoria}</span>}
                   </div>
                   <div className="card-bottom">
-                    <div className="card-price"><span>Precio</span>USD {p.precio}</div>
+                    <div className="card-price"><span>Precio</span>{p.moneda || "USD"} ${p.precio}</div>
                     <a
                       className="card-ask"
                       href={consultarLink(p)}
@@ -215,7 +216,7 @@ export default function Stock({ initialProductos }: { initialProductos?: Product
                 </div>
                 <div><span>Memoria</span><b>{modalProduct.memoria}</b></div>
                 <div><span>Batería</span><b>{modalProduct.bateria}</b></div>
-                <div><span>Precio</span><b>USD {modalProduct.precio}</b></div>
+                <div><span>Precio</span><b>{modalProduct.moneda || "USD"} ${modalProduct.precio}</b></div>
               </div>
               <a
                 className="btn btn-primary"

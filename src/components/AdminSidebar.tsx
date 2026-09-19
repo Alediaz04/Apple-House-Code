@@ -3,9 +3,11 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { cerrarSesion } from "@/app/admin/login/actions";
 
 interface NavItem {
+
   label: string;
   href: string;
   icon: React.ReactNode;
@@ -78,6 +80,32 @@ const NAV_ITEMS: NavItem[] = [
 export default function AdminSidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    };
+    if (showUserMenu) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showUserMenu]);
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await cerrarSesion();
+    } catch {
+      setIsLoggingOut(false);
+    }
+  };
 
   if (pathname === "/admin/login") {
     return null;
@@ -150,14 +178,53 @@ export default function AdminSidebar() {
       </div>
 
       <div className="admin-sidebar-footer">
-        <div className="admin-user-info">
-          <div className="admin-user-avatar">AH</div>
-          <div>
-            <div className="admin-user-name">Panel de Control</div>
-            <div className="admin-user-role">Administrador</div>
-          </div>
+        <div className="admin-user-wrapper" ref={menuRef}>
+          {showUserMenu && (
+            <div className="admin-user-menu">
+              <button
+                type="button"
+                className="admin-user-menu-item logout"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                <span>{isLoggingOut ? "Cerrando sesión..." : "Cerrar sesión"}</span>
+              </button>
+            </div>
+          )}
+
+          <button
+            type="button"
+            className={`admin-user-info-btn${showUserMenu ? " active" : ""}`}
+            onClick={() => setShowUserMenu((v) => !v)}
+            aria-label="Menú de usuario"
+            aria-expanded={showUserMenu}
+          >
+            <div className="admin-user-avatar">AH</div>
+            <div className="admin-user-details">
+              <div className="admin-user-name">Panel de Control</div>
+              <div className="admin-user-role">Administrador</div>
+            </div>
+            <svg
+              className={`admin-user-chevron${showUserMenu ? " open" : ""}`}
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </button>
         </div>
       </div>
     </aside>
   );
-}
+}
