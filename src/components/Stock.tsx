@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { productos, CAT_LABEL, Categoria, Estado, Producto, waLink } from "@/lib/products";
+import { ColorDisplay } from "@/components/ColorPalettePicker";
 
 const CAT_ICONS: Record<Categoria, React.ReactNode> = {
   iphone: (
@@ -159,10 +160,11 @@ export default function Stock({ initialProductos }: { initialProductos?: Product
                   </div>
                   <div className="card-title">{p.modelo}</div>
                   <div className="card-sub">{p.bateria !== "—" ? `Batería ${p.bateria}` : CAT_LABEL[p.cat]}</div>
-                  <div className="card-tags">
-                    {tags.map((t) => (
-                      <span key={t}>{t}</span>
-                    ))}
+                  <div className="card-tags" style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                    {p.color && p.color !== "—" && (
+                      <ColorDisplay colorString={p.color} showName={false} size="sm" />
+                    )}
+                    {p.memoria && p.memoria !== "—" && <span>{p.memoria}</span>}
                   </div>
                   <div className="card-bottom">
                     <div className="card-price"><span>Precio</span>USD {p.precio}</div>
@@ -207,7 +209,10 @@ export default function Stock({ initialProductos }: { initialProductos?: Product
               </div>
               <h3>{modalProduct.modelo}</h3>
               <div className="modal-specs">
-                <div><span>Color</span><b>{modalProduct.color}</b></div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>Color</span>
+                  <b><ColorDisplay colorString={modalProduct.color} showName={true} size="md" /></b>
+                </div>
                 <div><span>Memoria</span><b>{modalProduct.memoria}</b></div>
                 <div><span>Batería</span><b>{modalProduct.bateria}</b></div>
                 <div><span>Precio</span><b>USD {modalProduct.precio}</b></div>

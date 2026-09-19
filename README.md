@@ -61,3 +61,7 @@ apple-house/
 
 4. **Abrir la aplicación:**
    
+
+
+5. ** npx prisma migrate dev --name agregar_moneda
+
