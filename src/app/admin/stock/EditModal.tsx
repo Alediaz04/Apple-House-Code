@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { editarProducto } from "./actions";
+import { ColorPalettePicker } from "@/components/ColorPalettePicker";
 
 interface ProductoItem {
   id: string;
@@ -13,6 +14,8 @@ interface ProductoItem {
   bateria: string | null;
   precioVenta: number;
   precioCosto: number | null;
+  stock: number;
+  moneda?: string;
 }
 
 const CATEGORIAS = [
@@ -20,8 +23,23 @@ const CATEGORIAS = [
   { value: "MAC", label: "💻 Mac" },
   { value: "IPAD", label: "✏️ iPad" },
   { value: "ACCESORIOS", label: "🎧 Accesorios" },
+  { value: "PLAY", label: "🎮 Play" },
+  { value: "FUNDAS", label: "📱 Fundas" },
   { value: "OTROS", label: "📦 Otros" },
 ];
+
+function parseMemoria(memoriaStr?: string | null) {
+  if (!memoriaStr) return { cantidad: "", unidad: "GB" };
+  const trimmed = memoriaStr.trim();
+  const match = trimmed.match(/^(\d+(?:\.\d+)?)\s*(GB|TB|MB)?$/i);
+  if (match) {
+    return {
+      cantidad: match[1],
+      unidad: (match[2] || "GB").toUpperCase(),
+    };
+  }
+  return { cantidad: trimmed, unidad: "GB" };
+}
 
 export default function EditModal({
   producto,
@@ -33,8 +51,11 @@ export default function EditModal({
   const [estadoSeleccionado, setEstadoSeleccionado] = useState<"NUEVO" | "USADO">(
     producto.estado as "NUEVO" | "USADO"
   );
+  const [moneda, setMoneda] = useState<string>(producto.moneda || "USD");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const initialMemoria = parseMemoria(producto.memoria);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -170,30 +191,43 @@ export default function EditModal({
               </div>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="color" className="form-label">
+            <div className="form-group col-span-2">
+              <label className="form-label">
                 Color
               </label>
-              <input
-                id="color"
-                name="color"
-                defaultValue={producto.color || ""}
-                placeholder="Ej: Natural Titanium"
-                className="form-input"
-              />
+              <ColorPalettePicker initialValue={producto.color} />
             </div>
 
             <div className="form-group">
-              <label htmlFor="memoria" className="form-label">
+              <label htmlFor="memoriaCantidad" className="form-label">
                 Memoria
               </label>
-              <input
-                id="memoria"
-                name="memoria"
-                defaultValue={producto.memoria || ""}
-                placeholder="Ej: 128 GB"
-                className="form-input"
-              />
+              <div style={{ display: "flex", gap: "8px" }}>
+                <div className="input-wrapper" style={{ flex: 1 }}>
+                  <input
+                    id="memoriaCantidad"
+                    name="memoriaCantidad"
+                    type="number"
+                    min="1"
+                    step="any"
+                    defaultValue={initialMemoria.cantidad}
+                    placeholder="Ej: 128, 256, 1"
+                    className="form-input"
+                  />
+                </div>
+                <div className="select-wrapper" style={{ width: "95px" }}>
+                  <select
+                    id="memoriaUnidad"
+                    name="memoriaUnidad"
+                    defaultValue={initialMemoria.unidad}
+                    className="form-select"
+                  >
+                    <option value="GB">GB</option>
+                    <option value="TB">TB</option>
+                    <option value="MB">MB</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
             <div className="form-group col-span-2">
@@ -209,12 +243,49 @@ export default function EditModal({
               />
             </div>
 
+            <div className="form-group col-span-2">
+              <label htmlFor="stock" className="form-label">
+                Cantidad en Stock <span className="req">*</span>
+              </label>
+              <div className="input-wrapper">
+                <input
+                  id="stock"
+                  name="stock"
+                  type="number"
+                  min="0"
+                  step="1"
+                  required
+                  defaultValue={producto.stock}
+                  className="form-input"
+                />
+              </div>
+            </div>
+
+            <div className="form-group col-span-2">
+              <label htmlFor="moneda" className="form-label">
+                Moneda <span className="req">*</span>
+              </label>
+              <div className="select-wrapper">
+                <select
+                  id="moneda"
+                  name="moneda"
+                  required
+                  value={moneda}
+                  onChange={(e) => setMoneda(e.target.value)}
+                  className="form-select"
+                >
+                  <option value="USD">USD (Dólares)</option>
+                  <option value="ARS">ARS (Pesos)</option>
+                </select>
+              </div>
+            </div>
+
             <div className="form-group">
               <label htmlFor="precioVenta" className="form-label">
-                Precio Venta (USD) <span className="req">*</span>
+                Precio Venta ({moneda}) <span className="req">*</span>
               </label>
               <div className="input-currency-wrapper">
-                <span className="currency-prefix">USD $</span>
+                <span className="currency-prefix">{moneda} $</span>
                 <input
                   id="precioVenta"
                   name="precioVenta"
@@ -230,10 +301,10 @@ export default function EditModal({
 
             <div className="form-group">
               <label htmlFor="precioCosto" className="form-label">
-                Precio Costo (USD) <span className="hint">(Privado)</span>
+                Precio Costo ({moneda}) <span className="hint">(Privado)</span>
               </label>
               <div className="input-currency-wrapper">
-                <span className="currency-prefix">USD $</span>
+                <span className="currency-prefix">{moneda} $</span>
                 <input
                   id="precioCosto"
                   name="precioCosto"

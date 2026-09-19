@@ -13,14 +13,16 @@ export default function FiltroFecha() {
   const [hasta, setHasta] = useState(searchParams.get("hasta") ?? "");
 
   function cambiarRango(rango: string) {
-  const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams.toString());
 
-  params.set("rango", rango);
-  params.delete("desde");
-  params.delete("hasta");
+    params.set("rango", rango);
+    if (rango !== "personalizado") {
+      params.delete("desde");
+      params.delete("hasta");
+    }
 
-  router.push(`/admin/reparaciones?${params.toString()}`);
-}
+    router.push(`/admin/reparaciones?${params.toString()}`);
+  }
 
   function aplicarRango() {
     if (!desde || !hasta) {
@@ -36,184 +38,137 @@ export default function FiltroFecha() {
     router.push(`/admin/reparaciones?${params.toString()}`);
   }
 
+  function limpiarRango() {
+    setDesde("");
+    setHasta("");
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("rango", "todos");
+    params.delete("desde");
+    params.delete("hasta");
+    router.push(`/admin/reparaciones?${params.toString()}`);
+  }
+
   return (
-    <div style={{ marginBottom: 28 }}>
-      <label
-        htmlFor="rango-reparaciones"
-        style={{
-          display: "block",
-          marginBottom: 8,
-          fontWeight: 600,
-        }}
-      >
-        {"Per\u00edodo"}
-      </label>
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <label style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            Filtrar por período:
+          </label>
 
-      <select
-        id="rango-reparaciones"
-        value={rangoActual}
-        onChange={(e) => cambiarRango(e.target.value)}
-        style={{
-          padding: "10px 12px",
-          borderRadius: 10,
-          border: "1px solid var(--border)",
-          background: "var(--background)",
-          color: "var(--text)",
-          minWidth: 210,
-          colorScheme: "dark",
-        }}
-      >
-        <option
-          value="todos"
-          style={{ backgroundColor: "#15171a", color: "#ffffff" }}
-        >
-          Todas las reparaciones
-        </option>
-
-        <option
-          value="hoy"
-          style={{ backgroundColor: "#15171a", color: "#ffffff" }}
-        >
-          Hoy
-        </option>
-
-        <option
-          value="semana"
-          style={{ backgroundColor: "#15171a", color: "#ffffff" }}
-        >
-          Esta semana
-        </option>
-
-        <option
-          value="mes"
-          style={{ backgroundColor: "#15171a", color: "#ffffff" }}
-        >
-          Este mes
-        </option>
-
-        <option
-          value="personalizado"
-          style={{ backgroundColor: "#15171a", color: "#ffffff" }}
-        >
-          Rango personalizado
-        </option>
-      </select>
+          <select
+            id="rango-reparaciones"
+            value={rangoActual}
+            onChange={(e) => cambiarRango(e.target.value)}
+            className="form-select"
+            style={{
+              padding: "6px 12px",
+              fontSize: "0.88rem",
+              borderRadius: 8,
+              cursor: "pointer",
+              width: "auto",
+              minWidth: 200,
+            }}
+          >
+            <option value="todos">Todas las reparaciones</option>
+            <option value="hoy">Hoy</option>
+            <option value="semana">Esta semana</option>
+            <option value="mes">Este mes</option>
+            <option value="personalizado">Rango personalizado…</option>
+          </select>
+        </div>
+      </div>
 
       {rangoActual === "personalizado" && (
         <div
           style={{
+            marginTop: 14,
+            padding: "14px 18px",
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid var(--border)",
+            borderRadius: 12,
             display: "flex",
+            alignItems: "center",
             gap: 16,
-            marginTop: 16,
-            alignItems: "flex-end",
             flexWrap: "wrap",
           }}
         >
-          <div>
-            <label
-              htmlFor="fecha-desde"
-              style={{
-                display: "block",
-                marginBottom: 6,
-                fontSize: 14,
-              }}
-            >
-              Desde
-            </label>
-
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 500 }}>Desde:</span>
             <input
               id="fecha-desde"
               type="date"
               value={desde}
               onChange={(e) => setDesde(e.target.value)}
-              style={{
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "1px solid var(--border)",
-                background: "var(--background)",
-                color: "var(--text)",
-                colorScheme: "dark",
-              }}
+              className="form-input"
+              style={{ padding: "6px 10px", fontSize: "0.85rem", width: "auto" }}
             />
           </div>
 
-          <div>
-            <label
-              htmlFor="fecha-hasta"
-              style={{
-                display: "block",
-                marginBottom: 6,
-                fontSize: 14,
-              }}
-            >
-              Hasta
-            </label>
-
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", fontWeight: 500 }}>Hasta:</span>
             <input
               id="fecha-hasta"
               type="date"
               value={hasta}
               onChange={(e) => setHasta(e.target.value)}
-              style={{
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "1px solid var(--border)",
-                background: "var(--background)",
-                color: "var(--text)",
-                colorScheme: "dark",
-              }}
+              className="form-input"
+              style={{ padding: "6px 10px", fontSize: "0.85rem", width: "auto" }}
             />
           </div>
 
-       <button
-  type="button"
-  onClick={aplicarRango}
-  disabled={!desde || !hasta}
-  style={{
-    height: 42,
-    padding: "0 20px",
-    borderRadius: 10,
-    border: "1px solid #3b82f6",
-    background: "#2563eb",
-    color: "#ffffff",
-    fontWeight: 600,
-    cursor: !desde || !hasta ? "not-allowed" : "pointer",
-    opacity: !desde || !hasta ? 0.5 : 1,
-    whiteSpace: "nowrap",
-    transition: "transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease",
-    boxShadow: "0 4px 12px rgba(37, 99, 235, 0.18)",
-  }}
-  onMouseEnter={(e) => {
-    if (!desde || !hasta) return;
+          <button
+            type="button"
+            onClick={aplicarRango}
+            disabled={!desde || !hasta}
+            style={{
+              background: "#38bdf8",
+              border: "none",
+              color: "#000000",
+              fontWeight: 700,
+              fontSize: "0.85rem",
+              borderRadius: 8,
+              padding: "8px 16px",
+              cursor: !desde || !hasta ? "not-allowed" : "pointer",
+              opacity: !desde || !hasta ? 0.5 : 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              boxShadow: "0 4px 12px rgba(56,189,248,0.25)",
+              transition: "all 0.15s ease",
+            }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            Realizar búsqueda
+          </button>
 
-    e.currentTarget.style.background = "#3b82f6";
-    e.currentTarget.style.transform = "translateY(-1px)";
-    e.currentTarget.style.boxShadow =
-      "0 6px 16px rgba(37, 99, 235, 0.3)";
-  }}
-  onMouseLeave={(e) => {
-    e.currentTarget.style.background = "#2563eb";
-    e.currentTarget.style.transform = "translateY(0)";
-    e.currentTarget.style.boxShadow =
-      "0 4px 12px rgba(37, 99, 235, 0.18)";
-  }}
-  onMouseDown={(e) => {
-    if (!desde || !hasta) return;
-
-    e.currentTarget.style.transform = "translateY(1px)";
-    e.currentTarget.style.boxShadow =
-      "0 2px 6px rgba(37, 99, 235, 0.2)";
-  }}
-  onMouseUp={(e) => {
-    if (!desde || !hasta) return;
-
-    e.currentTarget.style.transform = "translateY(-1px)";
-    e.currentTarget.style.boxShadow =
-      "0 6px 16px rgba(37, 99, 235, 0.3)";
-  }}
->
-  Aplicar rango
-</button>
+          {(desde || hasta) && (
+            <button
+              type="button"
+              onClick={limpiarRango}
+              style={{
+                background: "rgba(239, 68, 68, 0.12)",
+                border: "1px solid rgba(239, 68, 68, 0.25)",
+                borderRadius: 6,
+                padding: "6px 12px",
+                color: "#ef4444",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Limpiar rango
+            </button>
+          )}
         </div>
       )}
     </div>

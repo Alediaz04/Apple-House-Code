@@ -1,909 +1,629 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import {
-  cambiarEstadoReparacion,
-  editarReparacion,
-  eliminarReparacion,
+    cambiarEstadoReparacion,
+    editarReparacion,
+    eliminarReparacion,
 } from "./actions";
 
-
 interface Reparacion {
-  id: string;
-  nombreCliente: string;
-  telefono: string;
-  email: string | null;
-  dispositivo: string;
-  fechaIngreso: Date | string;
-  cobro: number | null;
-  costoRepuestos: number | null;
-  descripcion: string | null;
-  estado: "PENDIENTE" | "ENTREGADO";
+    id: string;
+    nombreCliente: string;
+    telefono: string;
+    email: string | null;
+    dispositivo: string;
+    fechaIngreso: Date | string;
+    cobro: number | null;
+    costoRepuestos: number | null;
+    descripcion: string | null;
+    estado: "PENDIENTE" | "ENTREGADO";
 }
 
 function formatearFecha(fecha: Date | string) {
-  const date = new Date(fecha);
-
-  return date.toLocaleDateString("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+    const date = new Date(fecha);
+    return date.toLocaleDateString("es-AR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+    });
 }
 
 function formatearFechaInput(fecha: Date | string) {
-  const date = new Date(fecha);
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
+    const date = new Date(fecha);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
 }
 
-
 function formatearMonto(monto: number | null) {
-  if (monto === null) return "-";
-
-  return `$${monto.toFixed(2)}`;
+    if (monto === null || monto === undefined) return "—";
+    return `ARS $${monto.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default function ReparacionesList({
-  reparaciones,
+    reparaciones,
 }: {
-  reparaciones: Reparacion[];
+    reparaciones: Reparacion[];
 }) {
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [deletingReparacion, setDeletingReparacion] =
-    useState<Reparacion | null>(null);
-    const [editingReparacion, setEditingReparacion] =
-  useState<Reparacion | null>(null);
-  const [isPending, startTransition] = useTransition();
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  
+    const [filtroEstado, setFiltroEstado] = useState<"TODOS" | "PENDIENTE" | "ENTREGADO">("TODOS");
+    const [deletingReparacion, setDeletingReparacion] = useState<Reparacion | null>(null);
+    const [editingReparacion, setEditingReparacion] = useState<Reparacion | null>(null);
+    const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node)
-      ) {
-        setOpenMenuId(null);
-      }
+    function confirmarEliminacion() {
+        if (!deletingReparacion) return;
+        const id = deletingReparacion.id;
+
+        startTransition(async () => {
+            const result = await eliminarReparacion(id);
+            if (!result.ok) {
+                alert(result.error || "No se pudo eliminar la reparación.");
+                return;
+            }
+            setDeletingReparacion(null);
+        });
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  function confirmarEliminacion() {
-    if (!deletingReparacion) return;
-
-    const id = deletingReparacion.id;
-
-    startTransition(async () => {
-      const result = await eliminarReparacion(id);
-
-      if (!result.ok) {
-        alert(result.error || "No se pudo eliminar la reparacion.");
-        return;
-      }
-
-      setDeletingReparacion(null);
-      setOpenMenuId(null);
-    });
-  }
-
-
-  async function cambiarEstado(reparacion: Reparacion) {
-    const nuevoEstado =
-      reparacion.estado === "PENDIENTE" ? "ENTREGADO" : "PENDIENTE";
-
-    startTransition(async () => {
-      const result = await cambiarEstadoReparacion(
-        reparacion.id,
-        nuevoEstado
-      );
-
-      if (!result.ok) {
-        alert(result.error || "No se pudo cambiar el estado.");
-      }
-    });
-  }
-
-
-async function guardarEdicion(event: React.FormEvent<HTMLFormElement>) {
-  event.preventDefault();
-
-  if (!editingReparacion) return;
-
-  const formData = new FormData(event.currentTarget);
-
-  startTransition(async () => {
-    const result = await editarReparacion(
-      editingReparacion.id,
-      formData
-    );
-
-    if (!result.ok) {
-      alert(result.error || "No se pudo actualizar la reparacion.");
-      return;
+    async function cambiarEstado(reparacion: Reparacion) {
+        const nuevoEstado = reparacion.estado === "PENDIENTE" ? "ENTREGADO" : "PENDIENTE";
+        startTransition(async () => {
+            const result = await cambiarEstadoReparacion(reparacion.id, nuevoEstado);
+            if (!result.ok) {
+                alert(result.error || "No se pudo cambiar el estado.");
+            }
+        });
     }
 
-    setEditingReparacion(null);
-  });
-}
+    async function guardarEdicion(event: React.FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        if (!editingReparacion) return;
 
+        const formData = new FormData(event.currentTarget);
 
-  if (reparaciones.length === 0) {
+        startTransition(async () => {
+            const result = await editarReparacion(editingReparacion.id, formData);
+            if (!result.ok) {
+                alert(result.error || "No se pudo actualizar la reparación.");
+                return;
+            }
+            setEditingReparacion(null);
+        });
+    }
+
+    const pendCount = reparaciones.filter((r) => r.estado === "PENDIENTE").length;
+    const entregCount = reparaciones.filter((r) => r.estado === "ENTREGADO").length;
+
+    const reparacionesFiltradas = reparaciones.filter((r) => {
+        if (filtroEstado === "TODOS") return true;
+        return r.estado === filtroEstado;
+    });
+
+    if (reparaciones.length === 0) {
+        return (
+            <div className="admin-form-card" style={{ color: "var(--text-muted)", textAlign: "center", padding: 32 }}>
+                Todavía no hay reparaciones registradas en este período.
+            </div>
+        );
+    }
+
     return (
-      <div className="admin-form-card">
-        <p style={{ color: "var(--text-muted)", margin: 0 }}>
-          Todavia no hay reparaciones registradas.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div style={{ display: "grid", gap: 20 }}>
-        {reparaciones.map((reparacion) => (
-          <article
-            key={reparacion.id}
-            className="admin-form-card"
-            style={{
-              margin: 0,
-              padding: 28,
-              position: "relative",
-            }}
-          >
-            {/* Encabezado */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "flex-start",
-                gap: 20,
-                paddingBottom: 20,
-                borderBottom: "1px solid var(--border)",
-              }}
-            >
-              <div>
-                <p
-                  style={{
-                    margin: "0 0 6px",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    color: "var(--text-muted)",
-                    textTransform: "uppercase",
-                  }}
+        <>
+            {/* Menú de Categorías por Estado (Todas, No Entregadas, Entregadas) */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 20, flexWrap: "wrap" }}>
+                <button
+                    type="button"
+                    onClick={() => setFiltroEstado("TODOS")}
+                    style={{
+                        padding: "8px 16px",
+                        borderRadius: 10,
+                        fontSize: "0.88rem",
+                        fontWeight: 700,
+                        border: filtroEstado === "TODOS" ? "1px solid #38bdf8" : "1px solid var(--border)",
+                        background: filtroEstado === "TODOS" ? "rgba(56,189,248,0.15)" : "rgba(255,255,255,0.03)",
+                        color: filtroEstado === "TODOS" ? "#38bdf8" : "var(--text-muted)",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
                 >
-                  Cliente
-                </p>
+                    Todas ({reparaciones.length})
+                </button>
 
-                <h3
-                  style={{
-                    margin: 0,
-                    fontSize: 22,
-                    lineHeight: 1.2,
-                  }}
+                <button
+                    type="button"
+                    onClick={() => setFiltroEstado("PENDIENTE")}
+                    style={{
+                        padding: "8px 16px",
+                        borderRadius: 10,
+                        fontSize: "0.88rem",
+                        fontWeight: 700,
+                        border: filtroEstado === "PENDIENTE" ? "1px solid rgba(234, 179, 8, 0.5)" : "1px solid var(--border)",
+                        background: filtroEstado === "PENDIENTE" ? "rgba(234, 179, 8, 0.18)" : "rgba(255,255,255,0.03)",
+                        color: filtroEstado === "PENDIENTE" ? "#facc15" : "var(--text-muted)",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
                 >
-                  {reparacion.nombreCliente}
-                </h3>
-              </div>
+                    ⏳ No Entregadas / Pendientes ({pendCount})
+                </button>
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                }}
-              >
-                <span
-  style={{
-    padding: "7px 12px",
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 700,
-    background:
-      reparacion.estado === "PENDIENTE"
-        ? "rgba(234, 179, 8, 0.15)"
-        : "rgba(34, 197, 94, 0.15)",
-    color:
-      reparacion.estado === "PENDIENTE"
-        ? "#facc15"
-        : "#4ade80",
-    border:
-      reparacion.estado === "PENDIENTE"
-        ? "1px solid rgba(234, 179, 8, 0.3)"
-        : "1px solid rgba(34, 197, 94, 0.3)",
-  }}
->
-                  {reparacion.estado}
-                </span>
+                <button
+                    type="button"
+                    onClick={() => setFiltroEstado("ENTREGADO")}
+                    style={{
+                        padding: "8px 16px",
+                        borderRadius: 10,
+                        fontSize: "0.88rem",
+                        fontWeight: 700,
+                        border: filtroEstado === "ENTREGADO" ? "1px solid rgba(34, 197, 94, 0.5)" : "1px solid var(--border)",
+                        background: filtroEstado === "ENTREGADO" ? "rgba(34, 197, 94, 0.18)" : "rgba(255,255,255,0.03)",
+                        color: filtroEstado === "ENTREGADO" ? "#4ade80" : "var(--text-muted)",
+                        cursor: "pointer",
+                        transition: "all 0.15s ease",
+                    }}
+                >
+                    ✓ Entregadas ({entregCount})
+                </button>
+            </div>
 
-                <div ref={openMenuId === reparacion.id ? menuRef : null}>
-                  <button
-  type="button"
-  onClick={() =>
-    setOpenMenuId(
-      openMenuId === reparacion.id
-        ? null
-        : reparacion.id
-    )
-  }
-  aria-label="Abrir acciones"
-  title="Acciones"
-  style={{
-    width: 36,
-    height: 36,
-    border: "1px solid #3a3d43",
-    borderRadius: 8,
-    background: "transparent",
-    color: "#ffffff",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  }}
->
-  <span
-    style={{
-      fontSize: 22,
-      lineHeight: 1,
-      transform: "translateY(-2px)",
-    }}
-  >
-    ⋮
-  </span>
-</button>
+            {reparacionesFiltradas.length === 0 ? (
+                <div className="admin-form-card" style={{ color: "var(--text-muted)", textAlign: "center", padding: 32 }}>
+                    No hay reparaciones en la categoría &quot;{filtroEstado === "PENDIENTE" ? "No Entregadas / Pendientes" : "Entregadas"}&quot;.
+                </div>
+            ) : (
+                <div style={{ display: "grid", gap: 14 }}>
+                    {reparacionesFiltradas.map((reparacion) => {
+                        const cobro = reparacion.cobro ?? 0;
+                        const costoRepuestos = reparacion.costoRepuestos ?? 0;
+                        const ganancia = cobro - costoRepuestos;
+                        const tieneCosto = reparacion.costoRepuestos !== null && reparacion.costoRepuestos !== undefined;
+                        const tieneCobro = reparacion.cobro !== null && reparacion.cobro !== undefined;
 
-                  {openMenuId === reparacion.id && (
+                        return (
+                            <article
+                                key={reparacion.id}
+                                style={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 14,
+                                    padding: "20px 22px",
+                                    background: "rgba(255,255,255,0.03)",
+                                    border: "1px solid var(--border)",
+                                    borderRadius: 14,
+                                    transition: "border-color 0.15s ease",
+                                }}
+                            >
+                                {/* Encabezado */}
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" }}>
+                                    <div>
+                                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                                            <strong style={{ fontSize: "1.15rem" }}>{reparacion.dispositivo}</strong>
+
+                                            {/* Insignia de Estado */}
+                                            <span
+                                                style={{
+                                                    fontSize: "0.78rem",
+                                                    fontWeight: 800,
+                                                    padding: "3px 10px",
+                                                    borderRadius: 999,
+                                                    background:
+                                                        reparacion.estado === "PENDIENTE"
+                                                            ? "rgba(234, 179, 8, 0.15)"
+                                                            : "rgba(34, 197, 94, 0.15)",
+                                                    color:
+                                                        reparacion.estado === "PENDIENTE"
+                                                            ? "#facc15"
+                                                            : "#4ade80",
+                                                    border:
+                                                        reparacion.estado === "PENDIENTE"
+                                                            ? "1px solid rgba(234, 179, 8, 0.3)"
+                                                            : "1px solid rgba(34, 197, 94, 0.3)",
+                                                }}
+                                            >
+                                                {reparacion.estado === "PENDIENTE" ? "PENDIENTE" : "ENTREGADO"}
+                                            </span>
+                                        </div>
+
+                                        <div style={{ color: "var(--text-muted)", fontSize: "0.88rem", marginTop: 6, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                                            <span>👤 <strong>{reparacion.nombreCliente}</strong></span>
+                                            <span>📞 {reparacion.telefono}</span>
+                                            {reparacion.email && <span>✉️ {reparacion.email}</span>}
+                                            <span>📅 Ingreso: {formatearFecha(reparacion.fechaIngreso)}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Botones de Acción */}
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => cambiarEstado(reparacion)}
+                                            style={{
+                                                background: reparacion.estado === "PENDIENTE" ? "rgba(34, 197, 94, 0.12)" : "rgba(234, 179, 8, 0.12)",
+                                                border: reparacion.estado === "PENDIENTE" ? "1px solid rgba(34, 197, 94, 0.3)" : "1px solid rgba(234, 179, 8, 0.3)",
+                                                borderRadius: 8,
+                                                padding: "8px 12px",
+                                                color: reparacion.estado === "PENDIENTE" ? "#4ade80" : "#facc15",
+                                                fontSize: "0.85rem",
+                                                fontWeight: 700,
+                                                cursor: "pointer",
+                                                transition: "all 0.15s ease",
+                                            }}
+                                        >
+                                            {reparacion.estado === "PENDIENTE" ? "✓ Marcar Entregada" : "⏳ Marcar Pendiente"}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setEditingReparacion(reparacion)}
+                                            style={{
+                                                background: "rgba(255,255,255,0.06)",
+                                                border: "1px solid var(--border)",
+                                                borderRadius: 8,
+                                                padding: "8px 12px",
+                                                color: "var(--text)",
+                                                fontSize: "0.85rem",
+                                                fontWeight: 500,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                cursor: "pointer",
+                                                transition: "all 0.15s ease",
+                                            }}
+                                        >
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                            </svg>
+                                            Editar
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => setDeletingReparacion(reparacion)}
+                                            style={{
+                                                background: "rgba(239, 68, 68, 0.1)",
+                                                border: "1px solid rgba(239, 68, 68, 0.25)",
+                                                borderRadius: 8,
+                                                padding: "8px 12px",
+                                                color: "#ef4444",
+                                                fontSize: "0.85rem",
+                                                fontWeight: 600,
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                cursor: "pointer",
+                                                transition: "all 0.15s ease",
+                                            }}
+                                        >
+                                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <polyline points="3 6 5 6 21 6" />
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                            </svg>
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Desglose Financiero Estético */}
+                                <div
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+                                        gap: 10,
+                                        padding: "12px 14px",
+                                        background: "rgba(0,0,0,0.25)",
+                                        borderRadius: 10,
+                                        border: "1px solid rgba(255,255,255,0.05)",
+                                    }}
+                                >
+                                    <div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>COBRO TOTAL</div>
+                                        <div style={{ fontSize: "0.95rem", fontWeight: 800, color: "#38bdf8", marginTop: 2 }}>
+                                            {formatearMonto(reparacion.cobro)}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>COSTO REPUESTOS</div>
+                                        <div style={{ fontSize: "0.95rem", fontWeight: 700, color: tieneCosto ? "#ef4444" : "var(--text-muted)", marginTop: 2 }}>
+                                            {formatearMonto(reparacion.costoRepuestos)}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600 }}>GANANCIA NETA</div>
+                                        <div style={{ fontSize: "0.95rem", fontWeight: 800, color: (tieneCobro || tieneCosto) ? (ganancia >= 0 ? "#4ade80" : "#ef4444") : "var(--text-muted)", marginTop: 2 }}>
+                                            {(tieneCobro || tieneCosto) ? `${ganancia >= 0 ? "+" : ""}${formatearMonto(ganancia)}` : "—"}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Observaciones */}
+                                {reparacion.descripcion && (
+                                    <div
+                                        style={{
+                                            padding: "12px 14px",
+                                            borderRadius: 8,
+                                            border: "1px solid rgba(255,255,255,0.06)",
+                                            background: "rgba(255,255,255,0.015)",
+                                            fontSize: "0.88rem",
+                                            color: "var(--text-muted)",
+                                        }}
+                                    >
+                                        <strong style={{ color: "var(--text)", fontSize: "0.82rem", textTransform: "uppercase", letterSpacing: "0.5px", display: "block", marginBottom: 4 }}>
+                                            📝 Observaciones:
+                                        </strong>
+                                        {reparacion.descripcion}
+                                    </div>
+                                )}
+                            </article>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Modal Editar Reparación */}
+            {editingReparacion && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 250,
+                        background: "rgba(0,0,0,0.75)",
+                        backdropFilter: "blur(6px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: 16,
+                    }}
+                    onClick={() => setEditingReparacion(null)}
+                >
                     <div
-                 style={{
-  position: "absolute",
-  top: 76,
-  right: 28,
-  width: 210,
-  background: "#15171b",
-  border: "1px solid #30343a",
-  borderRadius: 10,
-  boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-  zIndex: 20,
-  padding: 6,
-}}
+                        style={{
+                            width: "100%",
+                            maxWidth: 580,
+                            background: "#181a20",
+                            border: "1px solid var(--border)",
+                            borderRadius: 16,
+                            padding: 28,
+                            boxShadow: "0 20px 50px rgba(0,0,0,0.6)",
+                            maxHeight: "90vh",
+                            overflowY: "auto",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
                     >
+                        <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: 20 }}>
+                            Editar Reparación
+                        </h3>
 
-<button
-  type="button"
-  onClick={() => {
-    setEditingReparacion(reparacion);
-    setOpenMenuId(null);
-  }}
-  style={{
-    width: "100%",
-    border: "none",
-    borderRadius: 7,
-    background: "transparent",
-    color: "#ffffff",
-    padding: "11px 12px",
-    textAlign: "left",
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 600,
-  }}
->
-  Editar reparacion
-</button>
+                        <form onSubmit={guardarEdicion} style={{ display: "grid", gap: 16 }}>
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 14 }}>
+                                <div className="form-group">
+                                    <label className="form-label">Nombre del cliente *</label>
+                                    <input
+                                        name="nombreCliente"
+                                        defaultValue={editingReparacion.nombreCliente}
+                                        required
+                                        className="form-input"
+                                    />
+                                </div>
 
-<button
-  type="button"
-  onClick={() => {
-    cambiarEstado(reparacion);
-    setOpenMenuId(null);
-  }}
-  style={{
-    width: "100%",
-    border: "none",
-    borderRadius: 7,
-    background: "transparent",
-    color: "#ffffff",
-    padding: "11px 12px",
-    textAlign: "left",
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 600,
-  }}
->
-  {reparacion.estado === "PENDIENTE"
-    ? "Marcar como entregada"
-    : "Marcar como pendiente"}
-</button>
+                                <div className="form-group">
+                                    <label className="form-label">Teléfono *</label>
+                                    <input
+                                        name="telefono"
+                                        type="tel"
+                                        defaultValue={editingReparacion.telefono}
+                                        required
+                                        className="form-input"
+                                    />
+                                </div>
+                            </div>
 
-     <button
-  type="button"
-  onClick={() => {
-    setDeletingReparacion(reparacion);
-    setOpenMenuId(null);
-  }}
-  style={{
-    width: "100%",
-    border: "none",
-    borderRadius: 7,
-    background: "rgba(255, 80, 80, 0.08)",
-    color: "#ffffff",
-    padding: "11px 12px",
-    textAlign: "left",
-    cursor: "pointer",
-    fontSize: 14,
-    fontWeight: 600,
-  }}
->
-  Eliminar reparacion
-</button>
+                            <div className="form-group">
+                                <label className="form-label">Email (opcional)</label>
+                                <input
+                                    name="email"
+                                    type="email"
+                                    defaultValue={editingReparacion.email ?? ""}
+                                    className="form-input"
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Dispositivo *</label>
+                                <input
+                                    name="dispositivo"
+                                    defaultValue={editingReparacion.dispositivo}
+                                    required
+                                    className="form-input"
+                                />
+                            </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+                                <div className="form-group">
+                                    <label className="form-label">Fecha ingreso *</label>
+                                    <input
+                                        name="fechaIngreso"
+                                        type="date"
+                                        defaultValue={formatearFechaInput(editingReparacion.fechaIngreso)}
+                                        required
+                                        className="form-input"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Cobro (AR$)</label>
+                                    <input
+                                        name="cobro"
+                                        type="number"
+                                        step="any"
+                                        min="0"
+                                        defaultValue={editingReparacion.cobro ?? ""}
+                                        className="form-input"
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label">Repuestos (AR$)</label>
+                                    <input
+                                        name="costoRepuestos"
+                                        type="number"
+                                        step="any"
+                                        min="0"
+                                        defaultValue={editingReparacion.costoRepuestos ?? ""}
+                                        className="form-input"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="form-label">Descripción / Observaciones</label>
+                                <textarea
+                                    name="descripcion"
+                                    rows={3}
+                                    defaultValue={editingReparacion.descripcion ?? ""}
+                                    className="form-input"
+                                    style={{ resize: "vertical" }}
+                                />
+                            </div>
+
+                            <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setEditingReparacion(null)}
+                                    className="admin-btn-secondary"
+                                    style={{ flex: 1, justifyContent: "center" }}
+                                    disabled={isPending}
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isPending}
+                                    style={{
+                                        flex: 1,
+                                        display: "inline-flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        padding: "10px 16px",
+                                        borderRadius: "var(--radius-m)",
+                                        background: "#38bdf8",
+                                        border: "none",
+                                        color: "#000000",
+                                        fontWeight: 700,
+                                        fontSize: "0.9rem",
+                                        cursor: isPending ? "wait" : "pointer",
+                                        opacity: isPending ? 0.7 : 1,
+                                        boxShadow: "0 4px 14px rgba(56, 189, 248, 0.25)",
+                                        transition: "all 0.15s ease",
+                                    }}
+                                >
+                                    {isPending ? "Guardando..." : "Guardar cambios"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                  )}
                 </div>
-              </div>
-            </div>
+            )}
 
-            {/* Dispositivo */}
-            <div
-              style={{
-                padding: "20px 0",
-                borderBottom: "1px solid var(--border)",
-              }}
-            >
-              <p
-                style={{
-                  margin: "0 0 7px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  color: "var(--text-muted)",
-                  textTransform: "uppercase",
-                }}
-              >
-                Dispositivo
-              </p>
-
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 17,
-                  fontWeight: 600,
-                }}
-              >
-                {reparacion.dispositivo}
-              </p>
-            </div>
-
-            {/* Datos principales */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                gap: 24,
-                padding: "20px 0",
-                borderBottom: "1px solid var(--border)",
-              }}
-            >
-              <div>
-                <p
-                  style={{
-                    margin: "0 0 6px",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    color: "var(--text-muted)",
-                    textTransform: "uppercase",
-                  }}
+            {/* Modal Confirmación Eliminación */}
+            {deletingReparacion && (
+                <div
+                    style={{
+                        position: "fixed",
+                        inset: 0,
+                        zIndex: 250,
+                        background: "rgba(0, 0, 0, 0.75)",
+                        backdropFilter: "blur(6px)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: 16,
+                    }}
+                    onClick={() => setDeletingReparacion(null)}
                 >
-                  Contacto
-                </p>
+                    <div
+                        style={{
+                            width: "100%",
+                            maxWidth: 440,
+                            background: "#181a20",
+                            border: "1px solid var(--border)",
+                            borderRadius: 16,
+                            padding: 28,
+                            boxShadow: "0 20px 50px rgba(0, 0, 0, 0.6)",
+                            textAlign: "center",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div
+                            style={{
+                                width: 52,
+                                height: 52,
+                                borderRadius: "50%",
+                                background: "rgba(239, 68, 68, 0.15)",
+                                border: "1px solid rgba(239, 68, 68, 0.3)",
+                                color: "#ef4444",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                margin: "0 auto 16px auto",
+                            }}
+                        >
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                <line x1="10" y1="11" x2="10" y2="17" />
+                                <line x1="14" y1="11" x2="14" y2="17" />
+                            </svg>
+                        </div>
 
-                <p style={{ margin: "0 0 5px" }}>
-                  <strong>Telefono:</strong> {reparacion.telefono}
-                </p>
+                        <h3 style={{ fontSize: "1.25rem", fontWeight: 700, marginBottom: 8 }}>
+                            ¿Eliminar reparación?
+                        </h3>
+                        <p style={{ color: "var(--text-muted)", fontSize: "0.92rem", lineHeight: 1.5, marginBottom: 24 }}>
+                            Estás a punto de eliminar el registro de reparación del cliente{" "}
+                            <b style={{ color: "var(--text)" }}>&quot;{deletingReparacion.nombreCliente}&quot;</b> ({deletingReparacion.dispositivo}).
+                        </p>
 
-                {reparacion.email && (
-                  <p style={{ margin: 0 }}>
-                    <strong>Email:</strong> {reparacion.email}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <p
-                  style={{
-                    margin: "0 0 6px",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    color: "var(--text-muted)",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Reparacion
-                </p>
-
-                <p style={{ margin: "0 0 5px" }}>
-                  <strong>Ingreso:</strong>{" "}
-                  {formatearFecha(reparacion.fechaIngreso)}
-                </p>
-
-                <p style={{ margin: "0 0 5px" }}>
-                  <strong>Cobro:</strong> {formatearMonto(reparacion.cobro)}
-                </p>
-
-                <p style={{ margin: 0 }}>
-                  <strong>Repuestos:</strong>{" "}
-                  {formatearMonto(reparacion.costoRepuestos)}
-                </p>
-              </div>
-            </div>
-
-            {/* Descripcion */}
-            {reparacion.descripcion && (
-  <div
-    style={{
-      marginTop: 20,
-      padding: "16px 18px",
-      borderRadius: 10,
-      border: "1px solid #2f3238",
-      background: "rgba(255, 255, 255, 0.025)",
-    }}
-  >
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        marginBottom: 8,
-      }}
-    >
-      <span
-        style={{
-          width: 7,
-          height: 7,
-          borderRadius: "50%",
-          background: "var(--text-muted)",
-          display: "block",
-        }}
-      />
-
-      <p
-        style={{
-          margin: 0,
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.1em",
-          color: "var(--text-muted)",
-          textTransform: "uppercase",
-        }}
-      >
-        Detalle de la reparacion
-      </p>
-    </div>
-
-    <p
-      style={{
-        margin: 0,
-        lineHeight: 1.6,
-        color: "var(--text-muted)",
-        fontSize: 14,
-      }}
-    >
-      {reparacion.descripcion}
-    </p>
-  </div>
-)}
-          </article>
-        ))}
-      </div>
-
-      {/* Modal de confirmacion */}
-      {deletingReparacion && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 20,
-            zIndex: 100,
-          }}
-        >
-          <div
-            style={{
-  background: "#15171b",
-  color: "#ffffff",
-  border: "1px solid #30343a",
-  borderRadius: 14,
-  padding: 28,
-  width: "100%",
-  maxWidth: 420,
-  boxShadow: "0 16px 50px rgba(0,0,0,0.45)",
-}}
-          >
-            <p
-              style={{
-                margin: "0 0 8px",
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                color: "var(--text-muted)",
-                textTransform: "uppercase",
-              }}
-            >
-              Confirmacion
-            </p>
-
-            <h3
-  style={{
-    margin: "0 0 12px",
-    color: "#fff8f8",
-  }}
->
-  Eliminar reparacion
-</h3>
-
-            <p
-              style={{
-                margin: 0,
-                lineHeight: 1.5,
-                color: "var(--text-muted)",
-              }}
-            >
-              ¿Estas seguro de que queres eliminar la reparacion de{" "}
-              <strong>{deletingReparacion.nombreCliente}</strong>?
-            </p>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: 10,
-                marginTop: 24,
-              }}
-            >
-            <button
-  type="button"
-  onClick={() => setDeletingReparacion(null)}
-  disabled={isPending}
-  style={{
-    border: "1px solid #333",
-    borderRadius: 8,
-    padding: "10px 16px",
-    cursor: isPending ? "default" : "pointer",
-    fontWeight: 600,
-    background: "#fff",
-    color: "#222",
-    opacity: isPending ? 0.6 : 1,
-  }}
->
-  Cancelar
-</button>
-
-              <button
-                type="button"
-                onClick={confirmarEliminacion}
-                disabled={isPending}
-                style={{
-                  border: "none",
-                  borderRadius: 8,
-                  padding: "10px 16px",
-                  cursor: isPending ? "default" : "pointer",
-                  fontWeight: 600,
-                  background: "#222",
-                  color: "#fff",
-                  opacity: isPending ? 0.6 : 1,
-                }}
-              >
-                {isPending ? "Eliminando..." : "Eliminar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-          {editingReparacion && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 20,
-            zIndex: 100,
-          }}
-        >
-          <div
-            style={{
-              background: "#15171b",
-              color: "#ffffff",
-              border: "1px solid #30343a",
-              borderRadius: 14,
-              padding: 28,
-              width: "100%",
-              maxWidth: 620,
-              maxHeight: "90vh",
-              overflowY: "auto",
-              boxShadow: "0 16px 50px rgba(0,0,0,0.45)",
-            }}
-          >
-            <p
-              style={{
-                margin: "0 0 8px",
-                fontSize: 12,
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                color: "var(--text-muted)",
-                textTransform: "uppercase",
-              }}
-            >
-              Editar reparacion
-            </p>
-
-            <h3
-              style={{
-                margin: "0 0 24px",
-                fontSize: 22,
-              }}
-            >
-              Datos de la reparacion
-            </h3>
-
-            <form onSubmit={guardarEdicion}>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: 16,
-                }}
-              >
-                <div>
-                  <label
-                    htmlFor="editar-nombreCliente"
-                    style={{
-                      display: "block",
-                      marginBottom: 7,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Nombre del cliente
-                  </label>
-
-                  <input
-                    id="editar-nombreCliente"
-                    name="nombreCliente"
-                    defaultValue={editingReparacion.nombreCliente}
-                    required
-                    className="form-input"
-                  />
+                        <div style={{ display: "flex", gap: 12 }}>
+                            <button
+                                type="button"
+                                onClick={() => setDeletingReparacion(null)}
+                                className="admin-btn-secondary"
+                                style={{ flex: 1, justifyContent: "center" }}
+                                disabled={isPending}
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={confirmarEliminacion}
+                                disabled={isPending}
+                                style={{
+                                    flex: 1,
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    padding: "10px 16px",
+                                    borderRadius: "var(--radius-m)",
+                                    background: "#dc2626",
+                                    border: "none",
+                                    color: "#ffffff",
+                                    fontWeight: 600,
+                                    fontSize: "0.9rem",
+                                    cursor: isPending ? "wait" : "pointer",
+                                    opacity: isPending ? 0.7 : 1,
+                                    boxShadow: "0 4px 14px rgba(220, 38, 38, 0.35)",
+                                    transition: "all 0.15s ease",
+                                }}
+                            >
+                                {isPending ? "Eliminando..." : "Sí, eliminar"}
+                            </button>
+                        </div>
+                    </div>
                 </div>
-
-                <div>
-                  <label
-                    htmlFor="editar-telefono"
-                    style={{
-                      display: "block",
-                      marginBottom: 7,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Telefono
-                  </label>
-
-                  <input
-                    id="editar-telefono"
-                    name="telefono"
-                    type="tel"
-                    defaultValue={editingReparacion.telefono}
-                    required
-                    className="form-input"
-                  />
-                </div>
-
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label
-                    htmlFor="editar-email"
-                    style={{
-                      display: "block",
-                      marginBottom: 7,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Email
-                  </label>
-
-                  <input
-                    id="editar-email"
-                    name="email"
-                    type="email"
-                    defaultValue={editingReparacion.email ?? ""}
-                    className="form-input"
-                  />
-                </div>
-
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label
-                    htmlFor="editar-dispositivo"
-                    style={{
-                      display: "block",
-                      marginBottom: 7,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Dispositivo
-                  </label>
-
-                  <input
-                    id="editar-dispositivo"
-                    name="dispositivo"
-                    defaultValue={editingReparacion.dispositivo}
-                    required
-                    className="form-input"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="editar-fechaIngreso"
-                    style={{
-                      display: "block",
-                      marginBottom: 7,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Fecha de ingreso
-                  </label>
-
-                  <input
-                    id="editar-fechaIngreso"
-                    name="fechaIngreso"
-                    type="date"
-                    defaultValue={formatearFechaInput(
-                      editingReparacion.fechaIngreso
-                    )}
-                    required
-                    className="form-input"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="editar-cobro"
-                    style={{
-                      display: "block",
-                      marginBottom: 7,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Cobro
-                  </label>
-
-                  <input
-                    id="editar-cobro"
-                    name="cobro"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    defaultValue={editingReparacion.cobro ?? ""}
-                    className="form-input"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="editar-costoRepuestos"
-                    style={{
-                      display: "block",
-                      marginBottom: 7,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Costo de repuestos
-                  </label>
-
-                  <input
-                    id="editar-costoRepuestos"
-                    name="costoRepuestos"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    defaultValue={editingReparacion.costoRepuestos ?? ""}
-                    className="form-input"
-                  />
-                </div>
-
-                <div style={{ gridColumn: "1 / -1" }}>
-                  <label
-                    htmlFor="editar-descripcion"
-                    style={{
-                      display: "block",
-                      marginBottom: 7,
-                      fontSize: 13,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Descripcion
-                  </label>
-
-                  <textarea
-                    id="editar-descripcion"
-                    name="descripcion"
-                    rows={4}
-                    defaultValue={editingReparacion.descripcion ?? ""}
-                    className="form-input"
-                  />
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 10,
-                  marginTop: 24,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() => setEditingReparacion(null)}
-                  disabled={isPending}
-                  style={{
-                    border: "1px solid #3a3d43",
-                    borderRadius: 8,
-                    padding: "10px 16px",
-                    cursor: isPending ? "default" : "pointer",
-                    fontWeight: 600,
-                    background: "transparent",
-                    color: "#ffffff",
-                    opacity: isPending ? 0.6 : 1,
-                  }}
-                >
-                  Cancelar
-                </button>
-
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  style={{
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "10px 16px",
-                    cursor: isPending ? "default" : "pointer",
-                    fontWeight: 600,
-                    background: "#ffffff",
-                    color: "#15171b",
-                    opacity: isPending ? 0.6 : 1,
-                  }}
-                >
-                  {isPending ? "Guardando..." : "Guardar cambios"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-
-    </>
-  );
+            )}
+        </>
+    );
 }

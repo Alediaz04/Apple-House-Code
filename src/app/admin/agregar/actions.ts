@@ -14,15 +14,30 @@ export async function crearProducto(
   const categoria = String(formData.get("categoria") || "");
   const estado = String(formData.get("estado") || "");
   const color = String(formData.get("color") || "").trim() || null;
-  const memoria = String(formData.get("memoria") || "").trim() || null;
+
+  // Procesamos la cantidad y unidad de memoria
+  const memoriaCantidad = String(formData.get("memoriaCantidad") || formData.get("memoria") || "").trim();
+  const memoriaUnidad = String(formData.get("memoriaUnidad") || "GB").trim();
+  let memoria: string | null = null;
+  if (memoriaCantidad) {
+    if (/\b(GB|TB|MB)\b/i.test(memoriaCantidad)) {
+      memoria = memoriaCantidad;
+    } else {
+      memoria = `${memoriaCantidad} ${memoriaUnidad}`;
+    }
+  }
   const bateria = String(formData.get("bateria") || "").trim() || null;
   const precioVenta = Number(formData.get("precioVenta"));
   const precioCostoRaw = formData.get("precioCosto");
   const precioCosto = precioCostoRaw ? Number(precioCostoRaw) : null;
 
+  // NUEVO: Leemos la moneda y el stock del formulario
+  const moneda = String(formData.get("moneda") || "USD");
+  const stock = Number(formData.get("stock")) || 1;
+
   // Validaciones básicas del lado del servidor (nunca confiar solo en el formulario)
   if (!modelo) return { ok: false, error: "Falta el modelo." };
-  if (!["IPHONE", "MAC", "IPAD", "ACCESORIOS", "OTROS"].includes(categoria)) {
+  if (!["IPHONE", "MAC", "IPAD", "ACCESORIOS", "PLAY", "FUNDAS", "OTROS"].includes(categoria)) {
     return { ok: false, error: "Categoría inválida." };
   }
   if (!["NUEVO", "USADO"].includes(estado)) {
@@ -36,13 +51,15 @@ export async function crearProducto(
   await prisma.producto.create({
     data: {
       modelo,
-      categoria: categoria as "IPHONE" | "MAC" | "IPAD" | "ACCESORIOS" | "OTROS",
+      categoria: categoria as "IPHONE" | "MAC" | "IPAD" | "ACCESORIOS" | "PLAY" | "FUNDAS" | "OTROS",
       estado: estado as "NUEVO" | "USADO",
       color,
       memoria,
       bateria,
       precioVenta,
       precioCosto,
+      moneda,
+      stock,
     },
   });
 

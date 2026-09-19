@@ -2,7 +2,18 @@
 
 import { useState, useEffect, useRef, useTransition } from "react";
 import EditModal from "./EditModal";
+import VentaModal from "./VentaModal";
 import { eliminarProducto, cambiarEstadoVendido } from "./actions";
+
+const CATEGORIAS = [
+  { value: "IPHONE", label: "iPhone", icon: "📱" },
+  { value: "MAC", label: "Mac", icon: "💻" },
+  { value: "IPAD", label: "iPad", icon: "✏️" },
+  { value: "ACCESORIOS", label: "Accesorios", icon: "🎧" },
+  { value: "PLAY", label: "Play", icon: "🎮" },
+  { value: "FUNDAS", label: "Fundas", icon: "📱" },
+  { value: "OTROS", label: "Otros", icon: "📦" },
+] as const;
 
 interface Producto {
   id: string;
@@ -16,12 +27,15 @@ interface Producto {
   precioCosto: number | null;
   stock: number;
   visible: boolean;
+  moneda: string;
 }
 
 export default function StockList({ productos }: { productos: Producto[] }) {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
+  const [vendingProduct, setVendingProduct] = useState<Producto | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Producto | null>(null);
+  const [selectedCategoria, setSelectedCategoria] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -37,16 +51,6 @@ export default function StockList({ productos }: { productos: Producto[] }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleToggleVendido = (p: Producto) => {
-    const esVendido = p.stock === 0 || !p.visible;
-    setOpenMenuId(null);
-    startTransition(async () => {
-      // Si está vendido, queremos marcarlo como disponible (!esVendido = false).
-      // Si está disponible, queremos marcarlo como vendido (!esVendido = true).
-      await cambiarEstadoVendido(p.id, !esVendido);
-    });
-  };
-
   const handleConfirmDelete = () => {
     if (!deletingProduct) return;
     const targetId = deletingProduct.id;
@@ -54,6 +58,18 @@ export default function StockList({ productos }: { productos: Producto[] }) {
       await eliminarProducto(targetId);
       setDeletingProduct(null);
     });
+  };
+
+  const handleToggleVendido = (p: Producto) => {
+    const esVendido = p.stock === 0 || !p.visible;
+    setOpenMenuId(null);
+    if (esVendido) {
+      startTransition(async () => {
+        await cambiarEstadoVendido(p.id, false);
+      });
+    } else {
+      setVendingProduct(p);
+    }
   };
 
   if (productos.length === 0) {
@@ -64,10 +80,64 @@ export default function StockList({ productos }: { productos: Producto[] }) {
     );
   }
 
+  const productosVisibles = selectedCategoria
+    ? productos.filter((producto) => producto.categoria === selectedCategoria)
+    : productos;
+
   return (
     <>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+          gap: 12,
+          marginBottom: 24,
+        }}
+      >
+        {CATEGORIAS.map((categoria) => {
+          const productosCategoria = productos.filter((p) => p.categoria === categoria.value);
+          const stockTotal = productosCategoria.reduce((total, p) => total + p.stock, 0);
+          const isSelected = selectedCategoria === categoria.value;
+
+          return (
+            <button
+              key={categoria.value}
+              type="button"
+              onClick={() => setSelectedCategoria(isSelected ? null : categoria.value)}
+              style={{
+                padding: 16,
+                textAlign: "left",
+                cursor: "pointer",
+                color: "var(--text)",
+                background: isSelected ? "rgba(56,189,248,0.14)" : "rgba(255,255,255,0.03)",
+                border: isSelected ? "1px solid #38bdf8" : "1px solid var(--border)",
+                borderRadius: 12,
+              }}
+            >
+              <div style={{ fontSize: "1.4rem", marginBottom: 8 }}>{categoria.icon}</div>
+              <strong>{categoria.label}</strong>
+              <div style={{ color: "var(--text-muted)", fontSize: "0.82rem", marginTop: 6 }}>
+                {productosCategoria.length} equipo(s)
+              </div>
+              <div style={{ color: "#38bdf8", fontWeight: 700, marginTop: 4 }}>
+                {stockTotal} disponible(s)
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {selectedCategoria && (
+        <p style={{ color: "var(--text-muted)", marginBottom: 14 }}>
+          Mostrando categoría:{" "}
+          <strong style={{ color: "var(--text)" }}>
+            {CATEGORIAS.find((categoria) => categoria.value === selectedCategoria)?.label}
+          </strong>
+        </p>
+      )}
+
       <div style={{ display: "grid", gap: 14 }}>
-        {productos.map((p) => {
+        {productosVisibles.map((p) => {
           const esVendido = p.stock === 0 || !p.visible;
           const isMenuOpen = openMenuId === p.id;
 
@@ -90,6 +160,18 @@ export default function StockList({ productos }: { productos: Producto[] }) {
               <div style={{ flex: 1, minWidth: 0, paddingRight: 16, opacity: esVendido ? 0.75 : 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span style={{ fontWeight: 600, fontSize: "1.1rem" }}>{p.modelo}</span>
+                  <span
+                    style={{
+                      fontSize: "0.78rem",
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: 6,
+                      background: p.stock > 0 ? "rgba(56,189,248,0.14)" : "rgba(239,68,68,0.15)",
+                      color: p.stock > 0 ? "#38bdf8" : "#ef4444",
+                    }}
+                  >
+                    Stock: {p.stock}
+                  </span>
 
                   <span
                     style={{
@@ -133,11 +215,11 @@ export default function StockList({ productos }: { productos: Producto[] }) {
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#38bdf8" }}>
-                    USD {p.precioVenta}
+                    {p.moneda || "USD"} ${p.precioVenta}
                   </div>
-                  {p.precioCosto && (
+                  {p.precioCosto !== null && p.precioCosto !== undefined && (
                     <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                      Costo: USD {p.precioCosto}
+                      Costo: {p.moneda || "USD"} ${p.precioCosto}
                     </div>
                   )}
                 </div>
@@ -221,7 +303,6 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                         Editar producto
                       </button>
 
-                      {/* Marcar como vendido / disponible */}
                       <button
                         type="button"
                         onClick={() => handleToggleVendido(p)}
@@ -297,11 +378,25 @@ export default function StockList({ productos }: { productos: Producto[] }) {
         })}
       </div>
 
+      {productosVisibles.length === 0 && (
+        <div style={{ padding: 32, color: "var(--text-muted)", textAlign: "center" }}>
+          No hay equipos en esta categoría.
+        </div>
+      )}
+
       {/* Modal de edición */}
       {editingProduct && (
         <EditModal
           producto={editingProduct}
           onClose={() => setEditingProduct(null)}
+        />
+      )}
+
+      {/* Modal para registrar venta con cantidad custom */}
+      {vendingProduct && (
+        <VentaModal
+          producto={vendingProduct}
+          onClose={() => setVendingProduct(null)}
         />
       )}
 
@@ -359,7 +454,8 @@ export default function StockList({ productos }: { productos: Producto[] }) {
               ¿Eliminar producto?
             </h3>
             <p style={{ color: "var(--text-muted)", fontSize: "0.92rem", lineHeight: 1.5, marginBottom: 24 }}>
-              Estás a punto de eliminar el equipo <b style={{ color: "var(--text)" }}>"{deletingProduct.modelo}"</b>. Esta acción no se puede deshacer.
+              Estás a punto de eliminar el equipo{" "}
+              <b style={{ color: "var(--text)" }}>&quot;{deletingProduct.modelo}&quot;</b>. Esta acción no se puede deshacer.
             </p>
 
             <div style={{ display: "flex", gap: 12 }}>

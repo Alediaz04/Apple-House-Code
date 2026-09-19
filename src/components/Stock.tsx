@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { productos, CAT_LABEL, Categoria, Estado, Producto, waLink } from "@/lib/products";
+import { ColorDisplay } from "@/components/ColorPalettePicker";
 
 const CAT_ICONS: Record<Categoria, React.ReactNode> = {
   iphone: (
@@ -24,6 +25,16 @@ const CAT_ICONS: Record<Categoria, React.ReactNode> = {
       <path d="M4 20l3.5-1 10-10-2.5-2.5-10 10L4 20z" /><path d="M14 4l2.5 2.5" />
     </svg>
   ),
+  play: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="4" y="5" width="16" height="14" rx="2" /><path d="M8 12h4M10 10v4M16 11h.01M18 13h.01" />
+    </svg>
+  ),
+  fundas: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="6" y="2" width="12" height="20" rx="3" /><path d="M9 5h6" />
+    </svg>
+  ),
   otros: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
       <path d="M21 8l-9-5-9 5 9 5 9-5z" /><path d="M3 8v8l9 5 9-5V8" /><path d="M12 13v8" />
@@ -37,6 +48,8 @@ const CATS: { value: Categoria | "todos"; label: string }[] = [
   { value: "mac", label: "Mac" },
   { value: "ipad", label: "iPad" },
   { value: "accesorios", label: "Accesorios" },
+  { value: "play", label: "Play" },
+  { value: "fundas", label: "Fundas" },
   { value: "otros", label: "Otros" },
 ];
 
@@ -47,7 +60,8 @@ const ESTADOS: { value: Estado | "todos"; label: string }[] = [
 ];
 
 function consultarLink(p: Producto) {
-  return waLink(`Hola! Vi en la web que tienen ${p.modelo} (${p.color}, ${p.memoria}) a USD ${p.precio}. ¿Sigue disponible?`);
+  const m = p.moneda || "USD";
+  return waLink(`Hola! Vi en la web que tienen ${p.modelo} (${p.color}, ${p.memoria}) a ${m} $${p.precio}. ¿Sigue disponible?`);
 }
 
 export default function Stock({ initialProductos }: { initialProductos?: Producto[] }) {
@@ -56,7 +70,8 @@ export default function Stock({ initialProductos }: { initialProductos?: Product
   const [filtroTexto, setFiltroTexto] = useState("");
   const [modalIndex, setModalIndex] = useState<number | null>(null);
 
-  const lista = initialProductos && initialProductos.length > 0 ? initialProductos : productos;
+  // Un array vacío significa que la base no tiene productos disponibles.
+  const lista = initialProductos ?? productos;
 
   const items = useMemo(() => {
     return lista.filter((p) => {
@@ -146,13 +161,14 @@ export default function Stock({ initialProductos }: { initialProductos?: Product
                   </div>
                   <div className="card-title">{p.modelo}</div>
                   <div className="card-sub">{p.bateria !== "—" ? `Batería ${p.bateria}` : CAT_LABEL[p.cat]}</div>
-                  <div className="card-tags">
-                    {tags.map((t) => (
-                      <span key={t}>{t}</span>
-                    ))}
+                  <div className="card-tags" style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                    {p.color && p.color !== "—" && (
+                      <ColorDisplay colorString={p.color} showName={false} size="sm" />
+                    )}
+                    {p.memoria && p.memoria !== "—" && <span>{p.memoria}</span>}
                   </div>
                   <div className="card-bottom">
-                    <div className="card-price"><span>Precio</span>USD {p.precio}</div>
+                    <div className="card-price"><span>Precio</span>{p.moneda || "USD"} ${p.precio}</div>
                     <a
                       className="card-ask"
                       href={consultarLink(p)}
@@ -194,10 +210,13 @@ export default function Stock({ initialProductos }: { initialProductos?: Product
               </div>
               <h3>{modalProduct.modelo}</h3>
               <div className="modal-specs">
-                <div><span>Color</span><b>{modalProduct.color}</b></div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span>Color</span>
+                  <b><ColorDisplay colorString={modalProduct.color} showName={true} size="md" /></b>
+                </div>
                 <div><span>Memoria</span><b>{modalProduct.memoria}</b></div>
                 <div><span>Batería</span><b>{modalProduct.bateria}</b></div>
-                <div><span>Precio</span><b>USD {modalProduct.precio}</b></div>
+                <div><span>Precio</span><b>{modalProduct.moneda || "USD"} ${modalProduct.precio}</b></div>
               </div>
               <a
                 className="btn btn-primary"

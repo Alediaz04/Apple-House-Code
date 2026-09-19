@@ -34,3 +34,10 @@ export async function iniciarSesion(
   // Con las credenciales correctas, enviamos al panel de administración.
   redirect("/admin/agregar");
 }
+
+export async function cerrarSesion() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect("/admin/login");
+}
+
