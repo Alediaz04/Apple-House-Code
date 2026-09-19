@@ -1312,12 +1312,33 @@ footer {
 .admin-sidebar-footer {
   padding-top: 16px;
   border-top: 1px solid var(--border);
+  position: relative;
 }
 
-.admin-user-info {
+.admin-user-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.admin-user-info-btn {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 8px 10px;
+  border-radius: 10px;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-user-info-btn:hover,
+.admin-user-info-btn.active {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border);
 }
 
 .admin-user-avatar {
@@ -1331,18 +1352,93 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-user-details {
+  flex: 1;
+  min-width: 0;
 }
 
 .admin-user-name {
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .admin-user-role {
   font-size: 0.75rem;
   color: var(--text-muted);
 }
+
+.admin-user-chevron {
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.admin-user-chevron.open {
+  transform: rotate(180deg);
+}
+
+.admin-user-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  background: #16181d;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 50;
+  animation: adminMenuFadeIn 0.15s ease-out;
+}
+
+@keyframes adminMenuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-user-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.admin-user-menu-item.logout {
+  color: #ff5555;
+}
+
+.admin-user-menu-item.logout:hover {
+  background: rgba(255, 85, 85, 0.12);
+  color: #ff6b6b;
+}
+
+.admin-user-menu-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 
 .admin-content {
   flex: 1;

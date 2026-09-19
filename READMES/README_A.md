@@ -69,6 +69,21 @@ En esta sesión de trabajo se transformó la arquitectura de administración de 
 - **Botón explícito `🔍 Realizar búsqueda`**: Permite elegir fechas sin que la interfaz parpadee o re-calcule hasta presionar el botón.
 - Botón **`Limpiar rango`** para restablecer la vista.
 
+### 9. 🔐 Autenticación y Protección de Rutas con Supabase Auth
+- **Middleware de Sesión** ([src/lib/supabase/middleware.ts](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/lib/supabase/middleware.ts) y [src/middleware.ts](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/middleware.ts)):
+  - Implementación de `updateSession` mediante `@supabase/ssr` para verificar y mantener activa la sesión utilizando cookies.
+  - Protección automática de todas las rutas `/admin/*`: si un usuario no autenticado intenta ingresar a cualquier subruta de administración, es redirigido a `/admin/login`. Si un usuario con sesión activa ingresa a `/admin/login`, es redirigido directamente al panel.
+
+### 10. 🚪 Cierre de Sesión (Logout) desde el Panel de Control Administrador
+- **Acción Server `cerrarSesion`** ([src/app/admin/login/actions.ts](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/app/admin/login/actions.ts)):
+  - Función de servidor que ejecuta `supabase.auth.signOut()` para destruir la sesión y redirigir al login.
+- **Menú de Perfil Desplegable** ([AdminSidebar.tsx](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/components/AdminSidebar.tsx)):
+  - Se convirtió el pie de la barra lateral (`admin-sidebar-footer`) en un botón desplegable con indicador de flecha (chevron).
+  - Al presionar el perfil del usuario, se abre un popover flotante con la opción **"Cerrar sesión"** (con icono de salida y estado interactivo `Cerrando sesión...`).
+  - Incluye cierre automático al hacer clic en cualquier parte fuera del menú (`click-outside`).
+- **Estilos Estéticos** ([globals.css](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/app/globals.css)):
+  - Animación suave `adminMenuFadeIn`, bordes con efecto cristal e integración visual con el tema oscuro del panel.
+
 ---
 
 ## 📁 Archivos Modificados y Creados
@@ -85,8 +100,14 @@ En esta sesión de trabajo se transformó la arquitectura de administración de 
 | [src/app/admin/ventas/page.tsx](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/app/admin/ventas/page.tsx) | Modificado | Configuración para **Ventas — Equipos** (filtra USD y categorías IPHONE, MAC, IPAD, PLAY). |
 | [src/app/admin/ventas-equipos/page.tsx](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/app/admin/ventas-equipos/page.tsx) | Modificado | Re-exportación de la página principal de Ventas Equipos para la ruta `/admin/ventas-equipos`. |
 | [src/app/admin/ventas-accesorios/page.tsx](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/app/admin/ventas-accesorios/page.tsx) | Modificado | Panel para **Ventas — Accesorios** (filtra ventas ARS o categorías ACCESORIOS, FUNDAS, OTROS) pasando `monedaForzada="ARS"`. |
+| [src/app/admin/login/actions.ts](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/app/admin/login/actions.ts) | Modificado | Agregado de Server Action `cerrarSesion` con `supabase.auth.signOut()` y redirección a `/admin/login`. |
+| [src/components/AdminSidebar.tsx](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/components/AdminSidebar.tsx) | Modificado | Implementación de tarjeta desplegable en el perfil de usuario con la opción "Cerrar sesión", indicador chevron y detector click-outside. |
+| [src/middleware.ts](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/middleware.ts) | **Nuevo** | Middleware global de Next.js para actualizar sesión y proteger rutas `/admin/*`. |
+| [src/lib/supabase/middleware.ts](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/lib/supabase/middleware.ts) | **Nuevo** | Helper con `@supabase/ssr` para verificar cookies de sesión y redireccionar usuarios sin autenticar. |
+| [src/lib/supabase/server.ts](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/lib/supabase/server.ts) | **Nuevo** | Cliente Supabase para Next.js Server Components y Server Actions. |
 | [src/lib/products.ts](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/lib/products.ts) | Modificado | Agregado de propiedad `moneda` a la interfaz y mapeo desde la base de datos en `getProductosDb()`. |
 | [src/components/Stock.tsx](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/components/Stock.tsx) | Modificado | Formateo dinámico de moneda en la vista pública de stock y en los mensajes automáticos de WhatsApp. |
+| [src/app/globals.css](file:///c:/Users/Alejandro/Desktop/Apple-house-pipo/apple-house-code/apple-house/src/app/globals.css) | Modificado | Incorporación de estilos para el menú emergente de usuario, botones de logout, animaciones e interacción visual. |
 
 ---
 
