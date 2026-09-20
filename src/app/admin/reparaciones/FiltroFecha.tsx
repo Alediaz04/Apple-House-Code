@@ -1,7 +1,15 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+const OPCIONES_PERIODO = [
+  { value: "todos", label: "Todas las reparaciones" },
+  { value: "hoy", label: "Hoy" },
+  { value: "semana", label: "Esta semana" },
+  { value: "mes", label: "Este mes" },
+  { value: "personalizado", label: "Rango personalizado…" },
+];
 
 export default function FiltroFecha() {
   const router = useRouter();
@@ -11,6 +19,22 @@ export default function FiltroFecha() {
 
   const [desde, setDesde] = useState(searchParams.get("desde") ?? "");
   const [hasta, setHasta] = useState(searchParams.get("hasta") ?? "");
+
+  // Estado y referencia para el menú desplegable "a mano"
+  // (reemplaza al <select> nativo, cuya lista de opciones no se puede
+  // customizar del todo con CSS)
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuAbierto(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   function cambiarRango(rango: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -48,6 +72,9 @@ export default function FiltroFecha() {
     router.push(`/admin/reparaciones?${params.toString()}`);
   }
 
+  const opcionActual =
+    OPCIONES_PERIODO.find((o) => o.value === rangoActual) ?? OPCIONES_PERIODO[0];
+
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
@@ -62,26 +89,99 @@ export default function FiltroFecha() {
             Filtrar por período:
           </label>
 
-          <select
-            id="rango-reparaciones"
-            value={rangoActual}
-            onChange={(e) => cambiarRango(e.target.value)}
-            className="form-select"
-            style={{
-              padding: "6px 12px",
-              fontSize: "0.88rem",
-              borderRadius: 8,
-              cursor: "pointer",
-              width: "auto",
-              minWidth: 200,
-            }}
-          >
-            <option value="todos">Todas las reparaciones</option>
-            <option value="hoy">Hoy</option>
-            <option value="semana">Esta semana</option>
-            <option value="mes">Este mes</option>
-            <option value="personalizado">Rango personalizado…</option>
-          </select>
+          {/* Menú desplegable "a mano", en vez del <select> nativo */}
+          <div ref={menuRef} style={{ position: "relative", minWidth: 200 }}>
+            <button
+              type="button"
+              onClick={() => setMenuAbierto((v) => !v)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                padding: "6px 12px",
+                fontSize: "0.88rem",
+                borderRadius: 8,
+                border: menuAbierto ? "1px solid #38bdf8" : "1px solid var(--border)",
+                background: "var(--background)",
+                color: "var(--text)",
+                cursor: "pointer",
+              }}
+            >
+              <span>{opcionActual.label}</span>
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                style={{
+                  transform: menuAbierto ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform 0.15s ease",
+                  flexShrink: 0,
+                }}
+              >
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
+            </button>
+
+            {menuAbierto && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 6px)",
+                  left: 0,
+                  minWidth: "100%",
+                  background: "#15171a",
+                  border: "1px solid var(--border)",
+                  borderRadius: 10,
+                  boxShadow: "0 14px 35px rgba(0,0,0,0.6)",
+                  padding: 6,
+                  zIndex: 100,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                }}
+              >
+                {OPCIONES_PERIODO.map((opcion) => {
+                  const activa = opcion.value === rangoActual;
+                  return (
+                    <button
+                      key={opcion.value}
+                      type="button"
+                      onClick={() => {
+                        setMenuAbierto(false);
+                        cambiarRango(opcion.value);
+                      }}
+                      style={{
+                        display: "block",
+                        width: "100%",
+                        textAlign: "left",
+                        padding: "8px 12px",
+                        border: "none",
+                        borderRadius: 8,
+                        background: activa ? "rgba(56, 189, 248, 0.15)" : "transparent",
+                        color: activa ? "#38bdf8" : "var(--text)",
+                        fontSize: "0.85rem",
+                        fontWeight: activa ? 600 : 500,
+                        cursor: "pointer",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!activa) e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!activa) e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      {opcion.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

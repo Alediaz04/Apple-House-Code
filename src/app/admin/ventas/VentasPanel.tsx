@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useActionState } from "react";
+import { useState, useTransition, useActionState, useRef, useEffect } from "react";
 import { registrarVenta, eliminarVenta } from "./actions";
 import EditVentaModal from "./EditVentaModal";
 
@@ -34,6 +34,15 @@ interface VentasPanelProps {
   ventas: VentaItem[];
   monedaForzada?: "ARS" | "USD";
 }
+
+const OPCIONES_FILTRO_FECHA = [
+  { value: "todas", label: "Todas las ventas" },
+  { value: "hoy", label: "Hoy" },
+  { value: "ayer", label: "Ayer" },
+  { value: "semana", label: "Últimos 7 días" },
+  { value: "mes", label: "Este mes" },
+  { value: "personalizado", label: "Rango personalizado…" },
+];
 
 function isSameDay(d1: Date, d2: Date) {
   return (
@@ -113,6 +122,34 @@ export default function VentasPanel({
   const [deletingVenta, setDeletingVenta] = useState<VentaItem | null>(null);
   const [isPending, startTransition] = useTransition();
 
+  // Estado para el dropdown "a mano" de Equipo / Producto
+  const [productoId, setProductoId] = useState("");
+  const [menuProductoAbierto, setMenuProductoAbierto] = useState(false);
+  const menuProductoRef = useRef<HTMLDivElement | null>(null);
+
+  // Estado para el dropdown "a mano" de Filtrar por fecha
+  const [menuFechaAbierto, setMenuFechaAbierto] = useState(false);
+  const menuFechaRef = useRef<HTMLDivElement | null>(null);
+
+  // Cierra cualquiera de los dos menús si el usuario hace clic afuera
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuProductoRef.current && !menuProductoRef.current.contains(event.target as Node)) {
+        setMenuProductoAbierto(false);
+      }
+      if (menuFechaRef.current && !menuFechaRef.current.contains(event.target as Node)) {
+        setMenuFechaAbierto(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Si la venta se registró con éxito, vaciamos el producto elegido
+  useEffect(() => {
+    if (state?.ok) setProductoId("");
+  }, [state]);
+
   // Estados para Filtro de Fechas
   const [filtroFecha, setFiltroFecha] = useState<string>("todas");
   const [fechaDesdeInput, setFechaDesdeInput] = useState<string>("");
@@ -182,25 +219,122 @@ export default function VentasPanel({
               <label htmlFor="productoId" className="form-label">
                 Equipo / Producto <span className="req">*</span>
               </label>
-              <select
-                id="productoId"
-                name="productoId"
-                required
-                defaultValue=""
-                className="form-select"
-              >
-                <option value="" disabled>
-                  Seleccioná un producto
-                </option>
-                {productos.map((producto) => {
-                  const m = monedaForzada || producto.moneda || "USD";
-                  return (
-                    <option key={producto.id} value={producto.id}>
-                      {producto.modelo} [{producto.categoria}] ({m}) — {producto.stock} disponible(s)
-                    </option>
-                  );
-                })}
-              </select>
+
+              {/* Campo oculto: es lo que realmente viaja en el FormData al Server Action,
+                  ya que el div de abajo no es un <select> nativo del navegador */}
+              <input type="hidden" name="productoId" value={productoId} />
+
+              <div ref={menuProductoRef} style={{ position: "relative" }}>
+                <button
+                  type="button"
+                  onClick={() => setMenuProductoAbierto((v) => !v)}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 8,
+                    padding: "10px 12px",
+                    borderRadius: 8,
+                    border: menuProductoAbierto ? "1px solid #38bdf8" : "1px solid var(--border)",
+                    background: "var(--background)",
+                    color: productoId ? "var(--text)" : "var(--text-muted)",
+                    cursor: "pointer",
+                    fontSize: "0.9rem",
+                    textAlign: "left",
+                  }}
+                >
+                  <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {productoId
+                      ? (() => {
+                          const p = productos.find((prod) => prod.id === productoId);
+                          if (!p) return "Seleccioná un producto";
+                          const m = monedaForzada || p.moneda || "USD";
+                          return `${p.modelo} [${p.categoria}] (${m}) — ${p.stock} disponible(s)`;
+                        })()
+                      : "Seleccioná un producto"}
+                  </span>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    style={{
+                      transform: menuProductoAbierto ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.15s ease",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {menuProductoAbierto && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 6px)",
+                      left: 0,
+                      width: "100%",
+                      maxHeight: 280,
+                      overflowY: "auto",
+                      background: "#15171a",
+                      border: "1px solid var(--border)",
+                      borderRadius: 10,
+                      boxShadow: "0 14px 35px rgba(0,0,0,0.6)",
+                      padding: 6,
+                      zIndex: 100,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                    }}
+                  >
+                    {productos.length === 0 ? (
+                      <div style={{ padding: "10px 12px", color: "var(--text-muted)", fontSize: "0.85rem" }}>
+                        No hay productos disponibles.
+                      </div>
+                    ) : (
+                      productos.map((producto) => {
+                        const m = monedaForzada || producto.moneda || "USD";
+                        const activo = producto.id === productoId;
+                        return (
+                          <button
+                            key={producto.id}
+                            type="button"
+                            onClick={() => {
+                              setProductoId(producto.id);
+                              setMenuProductoAbierto(false);
+                            }}
+                            style={{
+                              display: "block",
+                              width: "100%",
+                              textAlign: "left",
+                              padding: "9px 12px",
+                              border: "none",
+                              borderRadius: 8,
+                              background: activo ? "rgba(56, 189, 248, 0.15)" : "transparent",
+                              color: activo ? "#38bdf8" : "var(--text)",
+                              fontSize: "0.85rem",
+                              fontWeight: activo ? 600 : 500,
+                              cursor: "pointer",
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!activo) e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!activo) e.currentTarget.style.background = "transparent";
+                            }}
+                          >
+                            {producto.modelo} [{producto.categoria}] ({m}) — {producto.stock} disponible(s)
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="form-group">
@@ -233,7 +367,7 @@ export default function VentasPanel({
             <button
               type="submit"
               className="admin-submit-btn"
-              disabled={pending || productos.length === 0}
+              disabled={pending || productos.length === 0 || !productoId}
             >
               {pending ? "Registrando..." : "Registrar venta"}
             </button>
@@ -263,19 +397,100 @@ export default function VentasPanel({
               </svg>
               Filtrar por fecha:
             </label>
-            <select
-              value={filtroFecha}
-              onChange={(e) => setFiltroFecha(e.target.value)}
-              className="form-select"
-              style={{ width: "auto", padding: "6px 12px", fontSize: "0.88rem", borderRadius: 8, cursor: "pointer" }}
-            >
-              <option value="todas">Todas las ventas</option>
-              <option value="hoy">Hoy</option>
-              <option value="ayer">Ayer</option>
-              <option value="semana">Últimos 7 días</option>
-              <option value="mes">Este mes</option>
-              <option value="personalizado">Rango personalizado…</option>
-            </select>
+
+            <div ref={menuFechaRef} style={{ position: "relative", minWidth: 190 }}>
+              <button
+                type="button"
+                onClick={() => setMenuFechaAbierto((v) => !v)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 8,
+                  padding: "6px 12px",
+                  fontSize: "0.88rem",
+                  borderRadius: 8,
+                  border: menuFechaAbierto ? "1px solid #38bdf8" : "1px solid var(--border)",
+                  background: "var(--background)",
+                  color: "var(--text)",
+                  cursor: "pointer",
+                }}
+              >
+                <span>{OPCIONES_FILTRO_FECHA.find((o) => o.value === filtroFecha)?.label}</span>
+                <svg
+                  width="13"
+                  height="13"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  style={{
+                    transform: menuFechaAbierto ? "rotate(180deg)" : "rotate(0deg)",
+                    transition: "transform 0.15s ease",
+                    flexShrink: 0,
+                  }}
+                >
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </button>
+
+              {menuFechaAbierto && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    left: 0,
+                    minWidth: "100%",
+                    background: "#15171a",
+                    border: "1px solid var(--border)",
+                    borderRadius: 10,
+                    boxShadow: "0 14px 35px rgba(0,0,0,0.6)",
+                    padding: 6,
+                    zIndex: 100,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                  }}
+                >
+                  {OPCIONES_FILTRO_FECHA.map((opcion) => {
+                    const activa = opcion.value === filtroFecha;
+                    return (
+                      <button
+                        key={opcion.value}
+                        type="button"
+                        onClick={() => {
+                          setFiltroFecha(opcion.value);
+                          setMenuFechaAbierto(false);
+                        }}
+                        style={{
+                          display: "block",
+                          width: "100%",
+                          textAlign: "left",
+                          padding: "8px 12px",
+                          border: "none",
+                          borderRadius: 8,
+                          background: activa ? "rgba(56, 189, 248, 0.15)" : "transparent",
+                          color: activa ? "#38bdf8" : "var(--text)",
+                          fontSize: "0.85rem",
+                          fontWeight: activa ? 600 : 500,
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) => {
+                          if (!activa) e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!activa) e.currentTarget.style.background = "transparent";
+                        }}
+                      >
+                        {opcion.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
