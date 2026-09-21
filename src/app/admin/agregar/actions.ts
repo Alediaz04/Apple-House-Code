@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { sanitizeBateria } from "@/lib/products";
 
 export type CrearProductoState = { ok: boolean; error?: string } | null;
 
@@ -26,14 +27,16 @@ export async function crearProducto(
       memoria = `${memoriaCantidad} ${memoriaUnidad}`;
     }
   }
-  const bateria = String(formData.get("bateria") || "").trim() || null;
+  const bateriaRaw = String(formData.get("bateria") || "").trim();
+  const bateria = sanitizeBateria(categoria, bateriaRaw);
   const precioVenta = Number(formData.get("precioVenta"));
   const precioCostoRaw = formData.get("precioCosto");
   const precioCosto = precioCostoRaw ? Number(precioCostoRaw) : null;
 
-  // NUEVO: Leemos la moneda y el stock del formulario
+  // NUEVO: Leemos la moneda, el stock y la foto del formulario
   const moneda = String(formData.get("moneda") || "USD");
   const stock = Number(formData.get("stock")) || 1;
+  const imagen = String(formData.get("imagen") || "").trim() || null;
 
   // Validaciones básicas del lado del servidor (nunca confiar solo en el formulario)
   if (!modelo) return { ok: false, error: "Falta el modelo." };
@@ -60,6 +63,7 @@ export async function crearProducto(
       precioCosto,
       moneda,
       stock,
+      imagen,
     },
   });
 

@@ -180,6 +180,7 @@ export function ColorDisplay({
                   width: `${circlePx}px`,
                   height: `${circlePx}px`,
                   borderRadius: "50%",
+                  background: col.hex,
                   backgroundColor: col.hex,
                   border: col.border
                     ? `1.5px solid ${col.border}`
@@ -321,6 +322,7 @@ export function ColorPalettePicker({
                   width: "30px",
                   height: "30px",
                   borderRadius: "50%",
+                  background: color.hex,
                   backgroundColor: color.hex,
                   border: isSelected
                     ? "2px solid #3b82f6"

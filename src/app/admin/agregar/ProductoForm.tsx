@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { crearProducto, CrearProductoState } from "./actions";
 import Link from "next/link";
 import { ColorPalettePicker } from "@/components/ColorPalettePicker";
+import { ImageUploader } from "@/components/ImageUploader";
 
 const CATEGORIAS = [
   { value: "IPHONE", label: "📱 iPhone" },
@@ -19,19 +20,9 @@ const initialState: CrearProductoState = null;
 
 export default function ProductoForm() {
   const [state, formAction, pending] = useActionState(crearProducto, initialState);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState("IPHONE");
   const [estadoSeleccionado, setEstadoSeleccionado] = useState<"NUEVO" | "USADO">("NUEVO");
-
-  // Estados para manejar vista previa de la foto y la moneda seleccionada
-  const [preview, setPreview] = useState<string | null>(null);
-  const [moneda, setMoneda] = useState("USD"); // <- Estado para la moneda dinámica
-
-  // NUEVO: Función para generar la URL temporal de la foto
-  function handleFotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPreview(URL.createObjectURL(file));
-    }
-  }
+  const [moneda, setMoneda] = useState("USD");
 
   return (
     <div className="admin-form-card">
@@ -66,7 +57,14 @@ export default function ProductoForm() {
               </label>
 
               <div className="select-wrapper">
-                <select id="categoria" name="categoria" required defaultValue="IPHONE" className="form-select">
+                <select
+                  id="categoria"
+                  name="categoria"
+                  required
+                  value={categoriaSeleccionada}
+                  onChange={(e) => setCategoriaSeleccionada(e.target.value)}
+                  className="form-select"
+                >
                   {CATEGORIAS.map((c) => (
                     <option key={c.value} value={c.value}>
                       {c.label}
@@ -172,21 +170,22 @@ export default function ProductoForm() {
               </div>
             </div>
 
-            <div className="form-group col-span-2">
-              <label htmlFor="bateria" className="form-label">
-                Salud de Batería {estadoSeleccionado === "USADO" && <span className="hint">(Recomendado para usados)</span>}
-              </label>
+            {["IPHONE", "MAC", "IPAD"].includes(categoriaSeleccionada.toUpperCase()) && (
+              <div className="form-group col-span-2">
+                <label htmlFor="bateria" className="form-label">
+                  Salud de Batería <span className="hint">(Opcional)</span>
+                </label>
 
-              <div className="input-wrapper">
-                <input
-                  id="bateria"
-                  name="bateria"
-                  placeholder={estadoSeleccionado === "NUEVO" ? "100%" : "Ej: 92%"}
-                  defaultValue={estadoSeleccionado === "NUEVO" ? "100%" : ""}
-                  className="form-input"
-                />
+                <div className="input-wrapper">
+                  <input
+                    id="bateria"
+                    name="bateria"
+                    placeholder="Ej: 100% o 88%"
+                    className="form-input"
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -267,40 +266,19 @@ export default function ProductoForm() {
 
         <div className="form-divider" />
 
-        {/* NUEVO: Sección 4: Agregar fotos */}
+        {/* Sección 4: Agregar fotos */}
         <div className="form-section">
           <div className="form-section-header">
             <span className="section-number">4</span>
-            <h3>Fotos del producto</h3>
+            <h3>Foto del equipo</h3>
           </div>
 
           <div className="form-grid gap-16">
             <div className="form-group col-span-2">
-              <label htmlFor="foto" className="form-label">
-                Foto principal
+              <label className="form-label">
+                Foto principal del producto <span className="hint">(Opcional, 1 foto máximo)</span>
               </label>
-              <div className="input-wrapper" style={{ marginBottom: "12px" }}>
-                <input
-                  id="foto"
-                  type="file"
-                  name="foto"
-                  accept="image/*"
-                  onChange={handleFotoChange}
-                  className="form-input"
-                  style={{ paddingTop: "8px", paddingBottom: "8px", cursor: "pointer" }}
-                />
-              </div>
-              
-              {/* Vista previa de la imagen */}
-              {preview && (
-                <div style={{ marginTop: "12px", border: "1px solid #eaeaea", padding: "8px", borderRadius: "16px", display: "inline-block" }}>
-                  <img
-                    src={preview}
-                    alt="Vista previa"
-                    style={{ width: 160, height: 160, objectFit: "cover", borderRadius: 12 }}
-                  />
-                </div>
-              )}
+              <ImageUploader name="imagen" />
             </div>
           </div>
         </div>

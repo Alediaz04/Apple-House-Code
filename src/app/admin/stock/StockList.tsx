@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useTransition } from "react";
 import EditModal from "./EditModal";
 import VentaModal from "./VentaModal";
 import { eliminarProducto, cambiarEstadoVendido } from "./actions";
+import { shouldShowBateria } from "@/lib/products";
 
 const CATEGORIAS = [
   { value: "IPHONE", label: "iPhone", icon: "📱" },
@@ -28,6 +29,7 @@ interface Producto {
   stock: number;
   visible: boolean;
   moneda: string;
+  imagen?: string | null;
 }
 
 export default function StockList({ productos }: { productos: Producto[] }) {
@@ -35,6 +37,7 @@ export default function StockList({ productos }: { productos: Producto[] }) {
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
   const [vendingProduct, setVendingProduct] = useState<Producto | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Producto | null>(null);
+  const [viewingProduct, setViewingProduct] = useState<Producto | null>(null);
   const [selectedCategoria, setSelectedCategoria] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -187,6 +190,25 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                     {p.estado}
                   </span>
 
+                  {p.imagen && (
+                    <span
+                      style={{
+                        fontSize: "0.78rem",
+                        fontWeight: 600,
+                        padding: "2px 8px",
+                        borderRadius: 6,
+                        background: "rgba(168, 85, 247, 0.15)",
+                        color: "#c084fc",
+                        border: "1px solid rgba(168, 85, 247, 0.3)",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      📷 Foto
+                    </span>
+                  )}
+
                   {esVendido && (
                     <span
                       style={{
@@ -208,13 +230,15 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                   <span>Cat: <b>{p.categoria}</b></span>
                   <span>Color: <b>{p.color || "—"}</b></span>
                   <span>Memoria: <b>{p.memoria || "—"}</b></span>
-                  <span>Batería: <b>{p.bateria || "—"}</b></span>
+                  {shouldShowBateria(p.categoria, p.bateria) && (
+                    <span>Batería: <b>{p.bateria}</b></span>
+                  )}
                 </div>
               </div>
 
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#38bdf8" }}>
+                <div style={{ textAlign: "right", cursor: "pointer" }} onClick={() => setViewingProduct(p)}>
+                  <div style={{ fontWeight: 700, fontSize: "1.2rem", color: "#22c55e" }}>
                     {p.moneda || "USD"} ${p.precioVenta}
                   </div>
                   {p.precioCosto !== null && p.precioCosto !== undefined && (
@@ -270,6 +294,40 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                         gap: 2,
                       }}
                     >
+                      {/* Ver ficha / foto */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          setViewingProduct(p);
+                        }}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                          width: "100%",
+                          padding: "10px 14px",
+                          border: "none",
+                          background: "transparent",
+                          borderRadius: 8,
+                          color: "var(--text)",
+                          fontSize: "0.88rem",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                          textAlign: "left",
+                          whiteSpace: "nowrap",
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.07)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10" />
+                          <line x1="12" y1="16" x2="12" y2="12" />
+                          <line x1="12" y1="8" x2="12.01" y2="8" />
+                        </svg>
+                        Ver ficha y foto
+                      </button>
+
                       {/* Editar */}
                       <button
                         type="button"
@@ -491,6 +549,175 @@ export default function StockList({ productos }: { productos: Producto[] }) {
                 }}
               >
                 {isPending ? "Eliminando..." : "Sí, eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de información y foto para Admin */}
+      {viewingProduct && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 220,
+            background: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 16,
+          }}
+          onClick={() => setViewingProduct(null)}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 480,
+              background: "#181a20",
+              border: "1px solid var(--border)",
+              borderRadius: 16,
+              padding: 24,
+              boxShadow: "0 20px 50px rgba(0,0,0,0.6)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h3 style={{ fontSize: "1.2rem", fontWeight: 700 }}>Ficha del Equipo</h3>
+              <button
+                type="button"
+                onClick={() => setViewingProduct(null)}
+                style={{
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "50%",
+                  width: 32,
+                  height: 32,
+                  color: "var(--text-muted)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {viewingProduct.imagen ? (
+              <div
+                style={{
+                  width: "100%",
+                  maxHeight: 280,
+                  borderRadius: 12,
+                  overflow: "hidden",
+                  background: "#000",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  marginBottom: 20,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <img
+                  src={viewingProduct.imagen}
+                  alt={viewingProduct.modelo}
+                  style={{ maxWidth: "100%", maxHeight: 280, objectFit: "contain" }}
+                />
+              </div>
+            ) : (
+              <div
+                style={{
+                  padding: "24px 16px",
+                  background: "rgba(255,255,255,0.02)",
+                  border: "1px dashed var(--border)",
+                  borderRadius: 12,
+                  textAlign: "center",
+                  color: "var(--text-muted)",
+                  fontSize: "0.88rem",
+                  marginBottom: 20,
+                }}
+              >
+                🖼️ Este equipo no tiene foto asignada.
+              </div>
+            )}
+
+            <div style={{ display: "grid", gap: 12, fontSize: "0.92rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}>
+                <span style={{ color: "var(--text-muted)" }}>Modelo</span>
+                <strong>{viewingProduct.modelo}</strong>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}>
+                <span style={{ color: "var(--text-muted)" }}>Categoría</span>
+                <span>{viewingProduct.categoria}</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}>
+                <span style={{ color: "var(--text-muted)" }}>Estado</span>
+                <span style={{ fontWeight: 600, color: viewingProduct.estado === "NUEVO" ? "#4ade80" : "#facc15" }}>
+                  {viewingProduct.estado}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}>
+                <span style={{ color: "var(--text-muted)" }}>Stock</span>
+                <span><b>{viewingProduct.stock}</b> unidades</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}>
+                <span style={{ color: "var(--text-muted)" }}>Color</span>
+                <span>{viewingProduct.color || "—"}</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}>
+                <span style={{ color: "var(--text-muted)" }}>Memoria</span>
+                <span>{viewingProduct.memoria || "—"}</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}>
+                <span style={{ color: "var(--text-muted)" }}>Batería</span>
+                <span>{viewingProduct.bateria || "—"}</span>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 8 }}>
+                <span style={{ color: "var(--text-muted)" }}>Precio Venta</span>
+                <strong style={{ color: "#22c55e", fontSize: "1.05rem" }}>
+                  {viewingProduct.moneda || "USD"} ${viewingProduct.precioVenta}
+                </strong>
+              </div>
+
+              {viewingProduct.precioCosto !== null && (
+                <div style={{ display: "flex", justifyContent: "space-between", paddingBottom: 8 }}>
+                  <span style={{ color: "var(--text-muted)" }}>Precio Costo (Privado)</span>
+                  <span>{viewingProduct.moneda || "USD"} ${viewingProduct.precioCosto}</span>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+              <button
+                type="button"
+                className="admin-btn-secondary"
+                style={{ flex: 1, justifyContent: "center" }}
+                onClick={() => setViewingProduct(null)}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="admin-submit-btn"
+                style={{ flex: 1, justifyContent: "center" }}
+                onClick={() => {
+                  const target = viewingProduct;
+                  setViewingProduct(null);
+                  setEditingProduct(target);
+                }}
+              >
+                ✏️ Editar foto / equipo
               </button>
             </div>
           </div>

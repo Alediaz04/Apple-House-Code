@@ -3,6 +3,26 @@ import { prisma } from "@/lib/prisma";
 export type Categoria = "iphone" | "mac" | "ipad" | "accesorios" | "play" | "fundas" | "otros";
 export type Estado = "nuevo" | "usado";
 
+export function shouldShowBateria(cat?: string | null, bateria?: string | null): boolean {
+  if (!cat) return false;
+  const allowedCategories = ["iphone", "mac", "ipad"];
+  if (!allowedCategories.includes(cat.toLowerCase())) return false;
+  if (!bateria) return false;
+  const trimmed = bateria.trim();
+  if (trimmed === "" || trimmed === "—" || trimmed === "0" || trimmed === "0%") return false;
+  return true;
+}
+
+export function sanitizeBateria(categoria?: string | null, bateriaRaw?: string | null): string | null {
+  if (!categoria) return null;
+  const allowedCategories = ["iphone", "mac", "ipad"];
+  if (!allowedCategories.includes(categoria.toLowerCase())) return null;
+  if (!bateriaRaw) return null;
+  const trimmed = bateriaRaw.trim();
+  if (trimmed === "" || trimmed === "—" || trimmed === "0" || trimmed === "0%") return null;
+  return trimmed;
+}
+
 export interface Producto {
   id?: string;
   modelo: string;
@@ -14,6 +34,7 @@ export interface Producto {
   precio: number;
   stock?: number;
   moneda?: string;
+  imagen?: string | null;
 }
 
 export async function getProductosDb(): Promise<Producto[]> {
@@ -35,6 +56,7 @@ export async function getProductosDb(): Promise<Producto[]> {
         precio: p.precioVenta,
         stock: p.stock,
         moneda: p.moneda || "USD",
+        imagen: p.imagen || null,
       }));
     }
   } catch (error) {

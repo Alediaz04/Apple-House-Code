@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { sanitizeBateria } from "@/lib/products";
 
 export async function eliminarProducto(id: string) {
   try {
@@ -41,13 +42,23 @@ export async function editarProducto(
       memoria = `${memoriaCantidad} ${memoriaUnidad}`;
     }
   }
-  const bateria = String(formData.get("bateria") || "").trim() || null;
+  const bateriaRaw = String(formData.get("bateria") || "").trim();
+  const bateria = sanitizeBateria(categoria, bateriaRaw);
   const precioVenta = Number(formData.get("precioVenta"));
   const precioCostoRaw = formData.get("precioCosto");
   const precioCosto = precioCostoRaw ? Number(precioCostoRaw) : null;
   const moneda = String(formData.get("moneda") || "USD");
   const stockRaw = formData.get("stock");
   const stock = stockRaw !== null ? Number(stockRaw) : undefined;
+  
+  const imagenRaw = formData.get("imagen");
+  const eliminarImagen = formData.get("eliminarImagen") === "true";
+  let imagen: string | null | undefined = undefined;
+  if (eliminarImagen) {
+    imagen = null;
+  } else if (typeof imagenRaw === "string" && imagenRaw.trim() !== "") {
+    imagen = imagenRaw.trim();
+  }
 
   if (!modelo) return { ok: false, error: "Falta el modelo." };
   if (!["IPHONE", "MAC", "IPAD", "ACCESORIOS", "PLAY", "FUNDAS", "OTROS"].includes(categoria)) {
@@ -77,6 +88,7 @@ export async function editarProducto(
         precioCosto,
         moneda: ["USD", "ARS"].includes(moneda) ? moneda : "USD",
         ...(stock !== undefined ? { stock, visible: stock > 0 } : {}),
+        ...(imagen !== undefined ? { imagen } : {}),
       },
     });
 

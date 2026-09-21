@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { editarProducto } from "./actions";
 import { ColorPalettePicker } from "@/components/ColorPalettePicker";
+import { ImageUploader } from "@/components/ImageUploader";
 
 interface ProductoItem {
   id: string;
@@ -16,6 +17,7 @@ interface ProductoItem {
   precioCosto: number | null;
   stock: number;
   moneda?: string;
+  imagen?: string | null;
 }
 
 const CATEGORIAS = [
@@ -48,6 +50,9 @@ export default function EditModal({
   producto: ProductoItem;
   onClose: () => void;
 }) {
+  const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>(
+    producto.categoria
+  );
   const [estadoSeleccionado, setEstadoSeleccionado] = useState<"NUEVO" | "USADO">(
     producto.estado as "NUEVO" | "USADO"
   );
@@ -151,7 +156,8 @@ export default function EditModal({
                 id="categoria"
                 name="categoria"
                 required
-                defaultValue={producto.categoria}
+                value={categoriaSeleccionada}
+                onChange={(e) => setCategoriaSeleccionada(e.target.value)}
                 className="form-select"
               >
                 {CATEGORIAS.map((c) => (
@@ -230,18 +236,20 @@ export default function EditModal({
               </div>
             </div>
 
-            <div className="form-group col-span-2">
-              <label htmlFor="bateria" className="form-label">
-                Salud de Batería
-              </label>
-              <input
-                id="bateria"
-                name="bateria"
-                defaultValue={producto.bateria || ""}
-                placeholder="Ej: 88%"
-                className="form-input"
-              />
-            </div>
+            {["IPHONE", "MAC", "IPAD"].includes(categoriaSeleccionada.toUpperCase()) && (
+              <div className="form-group col-span-2">
+                <label htmlFor="bateria" className="form-label">
+                  Salud de Batería <span className="hint">(Opcional)</span>
+                </label>
+                <input
+                  id="bateria"
+                  name="bateria"
+                  defaultValue={producto.bateria || ""}
+                  placeholder="Ej: 88%"
+                  className="form-input"
+                />
+              </div>
+            )}
 
             <div className="form-group col-span-2">
               <label htmlFor="stock" className="form-label">
@@ -315,6 +323,13 @@ export default function EditModal({
                   className="form-input currency-input"
                 />
               </div>
+            </div>
+
+            <div className="form-group col-span-2">
+              <label className="form-label">
+                Foto del producto <span className="hint">(Opcional, 1 foto máximo)</span>
+              </label>
+              <ImageUploader initialImage={producto.imagen} name="imagen" />
             </div>
           </div>
 
